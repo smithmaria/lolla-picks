@@ -108,14 +108,19 @@ function StageGrid({
 }: StageGridProps) {
   const stageCount = stages.length
   const gridTemplateColumns = `4rem repeat(${stageCount}, minmax(0, 1fr))`
-  const gridTemplateRows = `repeat(${totalSlots}, 2rem)`
+  const gridTemplateRows = `5rem repeat(${totalSlots}, 2rem)`
 
   return (
     <div
-      className="relative overflow-x-auto"
+      className="relative overflow-x-auto bg-teal"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
+      {/* Stage area frame — absolute so they're never covered by grid items */}
+      <div className="absolute pointer-events-none border-t-2 border-tealDark" style={{ top: '5rem', left: '4rem', right: 0, zIndex: 15 }} aria-hidden="true" />
+      <div className="absolute pointer-events-none border-l-2 border-tealDark" style={{ top: '5rem', bottom: 0, left: '4rem', zIndex: 15 }} aria-hidden="true" />
+      <div className="absolute pointer-events-none border-r-2 border-tealDark" style={{ top: '5rem', bottom: 0, right: 0, zIndex: 15 }} aria-hidden="true" />
+      <div className="absolute pointer-events-none border-b-2 border-tealDark" style={{ bottom: 0, left: '4rem', right: 0, zIndex: 15 }} aria-hidden="true" />
       <div
         className="grid"
         style={{ gridTemplateColumns, gridTemplateRows }}
@@ -124,7 +129,7 @@ function StageGrid({
       >
         {/* Time label header spacer */}
         <div
-          className="sticky top-0 z-20 bg-black border-b border-[#333333]"
+          className="sticky top-0 z-20 bg-pink h-20"
           style={{ gridColumn: 1, gridRow: 1 }}
           aria-hidden="true"
         />
@@ -133,15 +138,17 @@ function StageGrid({
         {stages.map((stage, si) => (
           <div
             key={stage}
-            className="sticky top-0 z-20 bg-black border-b border-[#333333] flex items-end pb-1 px-1"
+            className="sticky top-0 z-20 bg-pink px-1 pb-1 pt-2 h-20"
             style={{ gridColumn: si + 2, gridRow: 1 }}
             role="columnheader"
           >
-            <span className="text-xs font-display uppercase text-gray-400 truncate">{stage}</span>
+            <div className="bg-black h-full flex items-center justify-center px-2">
+              <span className="text-2xl font-display uppercase text-white text-center">{stage}</span>
+            </div>
           </div>
         ))}
 
-        {/* Hour separator lines — one per hour label, behind artist blocks */}
+        {/* Hour separator lines — behind artist blocks */}
         {hourMarkers.map(hourMinutes => {
           if (hourMinutes >= gridEnd) return null
           const slotIndex = (hourMinutes - gridStart) / SLOT_MINUTES
@@ -150,9 +157,9 @@ function StageGrid({
           return (
             <div
               key={`hour-line-${hourMinutes}`}
-              className="pointer-events-none border-t border-[#333333]/60"
+              className="pointer-events-none border-t-2 border-tealDark"
               style={{
-                gridColumn: `1 / -1`,
+                gridColumn: `2 / -1`,
                 gridRow: rowStart,
                 alignSelf: 'start',
                 zIndex: 1,
@@ -161,6 +168,13 @@ function StageGrid({
             />
           )
         })}
+
+        {/* Full-height pink fill for time column — covers rows between hour labels */}
+        <div
+          className="bg-pink"
+          style={{ gridColumn: 1, gridRow: `2 / ${totalSlots + 2}` }}
+          aria-hidden="true"
+        />
 
         {/* Time labels */}
         {hourMarkers.map(hourMinutes => {
@@ -171,11 +185,11 @@ function StageGrid({
           return (
             <div
               key={`label-${hourMinutes}`}
-              className="pr-2 flex items-start justify-end"
+              className="bg-pink pr-2 flex items-start justify-end"
               style={{ gridColumn: 1, gridRow: rowStart }}
               aria-hidden="true"
             >
-              <span className="text-xs text-gray-500 leading-none mt-0.5">
+              <span className="text-xs text-black font-semibold leading-none mt-0.5">
                 {formatHour(hourMinutes)}
               </span>
             </div>
@@ -366,17 +380,19 @@ export default function ScheduleGrid({
 
   if (isDesktop) {
     return (
-      <StageGrid
-        {...sharedGridProps}
-        stages={stages}
-        stageIndexMap={stageIndexMap}
-      />
+      <div className="bg-pink p-3">
+        <StageGrid
+          {...sharedGridProps}
+          stages={stages}
+          stageIndexMap={stageIndexMap}
+        />
+      </div>
     )
   }
 
   // Mobile: paginated stage columns
   return (
-    <div>
+    <div className="bg-pink p-3">
       {totalPages > 1 && (
         <div className="flex items-center justify-between mb-2">
           <button
@@ -385,11 +401,11 @@ export default function ScheduleGrid({
             onClick={() => setStagePage(p => Math.max(0, p - 1))}
             disabled={clampedPage === 0}
             aria-label="Previous stages"
-            className="w-8 h-8 bg-grayDark border border-[#333333] hover:bg-grayCustom disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark"
+            className="w-8 h-8 bg-black border border-tealDark hover:bg-grayCustom disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark"
           >
             &#8592;
           </button>
-          <span className="text-xs text-gray-500 font-display uppercase" aria-live="polite">
+          <span className="text-xs text-black font-display uppercase" aria-live="polite">
             Stages {clampedPage * MOBILE_STAGES_PER_PAGE + 1}–
             {Math.min((clampedPage + 1) * MOBILE_STAGES_PER_PAGE, stages.length)} of{' '}
             {stages.length}
@@ -400,7 +416,7 @@ export default function ScheduleGrid({
             onClick={() => setStagePage(p => Math.min(totalPages - 1, p + 1))}
             disabled={clampedPage >= totalPages - 1}
             aria-label="Next stages"
-            className="w-8 h-8 bg-grayDark border border-[#333333] hover:bg-grayCustom disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark"
+            className="w-8 h-8 bg-black border border-tealDark hover:bg-grayCustom disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark"
           >
             &#8594;
           </button>
