@@ -1,0 +1,61 @@
+[
+  { "id": "thursday-tmobile-1", "name": "Asha Banks", "stage": "T-Mobile", "day": "thursday", "start": "12:45", "end": "13:30" },
+  { "id": "thursday-tmobile-2", "name": "Haute & Freddy", "stage": "T-Mobile", "day": "thursday", "start": "14:30", "end": "15:30" },
+  { "id": "thursday-tmobile-3", "name": "5 Seconds of Summer", "stage": "T-Mobile", "day": "thursday", "start": "16:30", "end": "17:30" },
+  { "id": "thursday-tmobile-4", "name": "Sombr", "stage": "T-Mobile", "day": "thursday", "start": "18:30", "end": "19:30" },
+  { "id": "thursday-tmobile-5", "name": "Lorde", "stage": "T-Mobile", "day": "thursday", "start": "20:30", "end": "22:00" },
+
+  { "id": "thursday-perrys-1", "name": "KLO", "stage": "Perry's", "day": "thursday", "start": "12:00", "end": "12:30" },
+  { "id": "thursday-perrys-2", "name": "Know Good", "stage": "Perry's", "day": "thursday", "start": "12:45", "end": "13:30" },
+  { "id": "thursday-perrys-3", "name": "Devault", "stage": "Perry's", "day": "thursday", "start": "14:45", "end": "15:45" },
+  { "id": "thursday-perrys-4", "name": "Boys Noize", "stage": "Perry's", "day": "thursday", "start": "16:15", "end": "17:15" },
+  { "id": "thursday-perrys-5", "name": "Worship", "stage": "Perry's", "day": "thursday", "start": "20:30", "end": "21:45" },
+
+  { "id": "thursday-allianz-1", "name": "Pearly Drops", "stage": "Allianz", "day": "thursday", "start": "12:00", "end": "12:45" },
+  { "id": "thursday-allianz-2", "name": "Bad Nerves", "stage": "Allianz", "day": "thursday", "start": "13:30", "end": "14:30" },
+  { "id": "thursday-allianz-3", "name": "SB19", "stage": "Allianz", "day": "thursday", "start": "15:30", "end": "16:30" },
+  { "id": "thursday-allianz-4", "name": "Wet Leg", "stage": "Allianz", "day": "thursday", "start": "19:30", "end": "20:30" },
+
+  { "id": "friday-tmobile-1", "name": "Djo", "stage": "T-Mobile", "day": "friday", "start": "13:00", "end": "14:00" },
+  { "id": "friday-tmobile-2", "name": "Mannequin Pussy", "stage": "T-Mobile", "day": "friday", "start": "14:30", "end": "15:30" },
+  { "id": "friday-tmobile-3", "name": "Clairo", "stage": "T-Mobile", "day": "friday", "start": "16:00", "end": "17:15" },
+  { "id": "friday-tmobile-4", "name": "The Killers", "stage": "T-Mobile", "day": "friday", "start": "20:00", "end": "22:00" },
+
+  { "id": "friday-perrys-1", "name": "Artemas", "stage": "Perry's", "day": "friday", "start": "12:30", "end": "13:15" },
+  { "id": "friday-perrys-2", "name": "Fred Again", "stage": "Perry's", "day": "friday", "start": "14:00", "end": "15:15" },
+  { "id": "friday-perrys-3", "name": "Four Tet", "stage": "Perry's", "day": "friday", "start": "15:45", "end": "17:00" },
+  { "id": "friday-perrys-4", "name": "Skrillex", "stage": "Perry's", "day": "friday", "start": "21:00", "end": "22:00" },
+
+  { "id": "friday-allianz-1", "name": "Amaarae", "stage": "Allianz", "day": "friday", "start": "12:00", "end": "13:00" },
+  { "id": "friday-allianz-2", "name": "Tv Girl", "stage": "Allianz", "day": "friday", "start": "13:30", "end": "14:30" },
+  { "id": "friday-allianz-3", "name": "Jungle", "stage": "Allianz", "day": "friday", "start": "15:00", "end": "16:15" },
+  { "id": "friday-allianz-4", "name": "Glass Animals", "stage": "Allianz", "day": "friday", "start": "18:30", "end": "19:45" },
+
+  { "id": "saturday-tmobile-1", "name": "Paris Paloma", "stage": "T-Mobile", "day": "saturday", "start": "13:00", "end": "14:00" },
+  { "id": "saturday-tmobile-2", "name": "Sabrina Carpenter", "stage": "T-Mobile", "day": "saturday", "start": "19:00", "end": "20:30" },
+  { "id": "saturday-tmobile-3", "name": "Tyler the Creator", "stage": "T-Mobile", "day": "saturday", "start": "20:45", "end": "22:00" },
+
+  { "id": "saturday-perrys-1", "name": "Kettama", "stage": "Perry's", "day": "saturday", "start": "12:00", "end": "13:00" },
+  { "id": "saturday-perrys-2", "name": "Anyma", "stage": "Perry's", "day": "saturday", "start": "14:00", "end": "15:15" },
+  { "id": "saturday-perrys-3", "name": "Fisher", "stage": "Perry's", "day": "saturday", "start": "16:00", "end": "17:30" },
+  { "id": "saturday-perrys-4", "name": "Eric Prydz", "stage": "Perry's", "day": "saturday", "start": "21:00", "end": "22:00" },
+
+  { "id": "saturday-allianz-1", "name": "Mk.gee", "stage": "Allianz", "day": "saturday", "start": "12:30", "end": "13:30" },
+  { "id": "saturday-allianz-2", "name": "Chappell Roan", "stage": "Allianz", "day": "saturday", "start": "14:00", "end": "15:15" },
+  { "id": "saturday-allianz-3", "name": "Gracie Abrams", "stage": "Allianz", "day": "saturday", "start": "15:45", "end": "17:00" },
+  { "id": "saturday-allianz-4", "name": "Billie Eilish", "stage": "Allianz", "day": "saturday", "start": "19:30", "end": "21:00" },
+
+  { "id": "sunday-tmobile-1", "name": "Gigi Perez", "stage": "T-Mobile", "day": "sunday", "start": "12:30", "end": "13:30" },
+  { "id": "sunday-tmobile-2", "name": "Hozier", "stage": "T-Mobile", "day": "sunday", "start": "19:00", "end": "20:30" },
+  { "id": "sunday-tmobile-3", "name": "SZA", "stage": "T-Mobile", "day": "sunday", "start": "20:45", "end": "22:00" },
+
+  { "id": "sunday-perrys-1", "name": "Overmono", "stage": "Perry's", "day": "sunday", "start": "12:00", "end": "13:00" },
+  { "id": "sunday-perrys-2", "name": "Caribou", "stage": "Perry's", "day": "sunday", "start": "14:00", "end": "15:15" },
+  { "id": "sunday-perrys-3", "name": "Floating Points", "stage": "Perry's", "day": "sunday", "start": "16:00", "end": "17:30" },
+  { "id": "sunday-perrys-4", "name": "Disclosure", "stage": "Perry's", "day": "sunday", "start": "20:00", "end": "21:30" },
+
+  { "id": "sunday-allianz-1", "name": "Faye Webster", "stage": "Allianz", "day": "sunday", "start": "12:00", "end": "13:00" },
+  { "id": "sunday-allianz-2", "name": "Weezer", "stage": "Allianz", "day": "sunday", "start": "13:30", "end": "14:45" },
+  { "id": "sunday-allianz-3", "name": "Vampire Weekend", "stage": "Allianz", "day": "sunday", "start": "15:30", "end": "16:45" },
+  { "id": "sunday-allianz-4", "name": "LCD Soundsystem", "stage": "Allianz", "day": "sunday", "start": "18:30", "end": "20:00" }
+]
