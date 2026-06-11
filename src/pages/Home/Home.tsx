@@ -185,19 +185,31 @@ export default function Home() {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Votes per person: <span className="text-indigo-400">{votesPerUser}</span>
+              Votes per person
             </label>
-            <input
-              type="range"
-              min={1}
-              max={10}
-              value={votesPerUser}
-              onChange={e => setVotesPerUser(Number(e.target.value))}
-              className="w-full accent-indigo-500"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>1</span>
-              <span>10</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setVotesPerUser(v => Math.max(1, v - 1))}
+                className="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 text-white font-bold hover:bg-gray-700 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                min={1}
+                max={160}
+                value={votesPerUser}
+                onChange={e => setVotesPerUser(Math.min(160, Math.max(1, parseInt(e.target.value) || 1)))}
+                className="w-20 bg-gray-800 text-white text-center rounded-lg px-2 py-1.5 text-sm border border-gray-700 focus:outline-none focus:border-indigo-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <button
+                type="button"
+                onClick={() => setVotesPerUser(v => Math.min(160, v + 1))}
+                className="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 text-white font-bold hover:bg-gray-700 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                +
+              </button>
             </div>
           </div>
 
