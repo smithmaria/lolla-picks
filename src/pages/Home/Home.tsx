@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import './Home.css'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import type { Day, VoteScope } from '../../types'
@@ -27,6 +28,7 @@ export default function Home() {
   const [roomDisplayName, setRoomDisplayName] = useState('')
   const [selectedDays, setSelectedDays] = useState<Day[]>(['thursday', 'friday', 'saturday', 'sunday'])
   const [votesPerUser, setVotesPerUser] = useState(3)
+  const [allowMultiVote, setAllowMultiVote] = useState(true)
   const [voteScope, setVoteScope] = useState<VoteScope>('overall')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -76,6 +78,7 @@ export default function Home() {
         settings: {
           days: selectedDays,
           votes_per_user: votesPerUser,
+          allow_multi_vote: allowMultiVote,
           vote_scope: voteScope,
         },
       })
@@ -121,23 +124,23 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-gray-900 rounded-xl p-8 shadow-xl">
-        <h1 className="text-2xl font-bold text-white mb-6">Lolla Scheduler</h1>
+      <div className="home-card bg-grayCustom">
+        <h1 className="font-bold text-white mb-6">Lolla Picks</h1>
 
         {/* Tab toggle */}
-        <div className="flex gap-1 bg-gray-800 rounded-lg p-1 mb-6">
+        <div className="flex gap-1 bg-grayDark rounded-lg p-1 mb-6">
           {(['create', 'join'] as const).map(t => (
             <button
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 py-2 rounded-md text-lg font-display uppercase transition-colors ${
                 tab === t
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-yellow text-black'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              {t === 'create' ? 'Create a room' : 'Join a room'}
+              {t}
             </button>
           ))}
         </div>
@@ -154,13 +157,13 @@ export default function Home() {
                 value={joinInput}
                 onChange={e => setJoinInput(e.target.value)}
                 placeholder="Paste link or room ID"
-                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-700 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />
             </div>
             {joinError && <p className="text-red-400 text-sm">{joinError}</p>}
             <button
               type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg px-4 py-2.5 text-sm transition-colors"
+              className="w-full bg-red hover:bg-red disabled:opacity-50 text-black font-display uppercase px-4 py-2.5 text-lg transition-colors"
             >
               Go to room
             </button>
@@ -177,7 +180,7 @@ export default function Home() {
               onChange={e => setCreatorName(e.target.value)}
               placeholder="e.g. Maria"
               required
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-700 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
             />
           </div>
 
@@ -190,7 +193,7 @@ export default function Home() {
                 onChange={e => setCreatorPassword(e.target.value)}
                 placeholder="Choose a password"
                 required
-                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 pr-10 text-sm border border-gray-700 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white text-black px-3 py-2 pr-10 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />
               <button
                 type="button"
@@ -222,57 +225,33 @@ export default function Home() {
               value={roomDisplayName}
               onChange={e => setRoomDisplayName(e.target.value)}
               placeholder="e.g. Weekend Crew"
-              className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-700 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Festival days</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {ALL_DAYS.map(({ value, label }) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => toggleDay(value)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  className={`px-3 py-2 text-lg font-display uppercase border transition-colors ${
                     selectedDays.includes(value)
-                      ? 'bg-indigo-600 border-indigo-500 text-white'
-                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                      ? value === 'thursday'
+                        ? 'bg-teal border-teal text-black'
+                        : value === 'friday'
+                        ? 'bg-blue2 border-blue2 text-black'
+                        : value === 'saturday'
+                        ? 'bg-blue3 border-blue3 text-black'
+                        : 'bg-tealgreen border-tealgreen text-black'
+                      : 'bg-grayDark border-[#333333] text-gray-400 hover:border-gray-500'
                   }`}
                 >
                   {label}
                 </button>
               ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Votes per person
-            </label>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setVotesPerUser(v => Math.max(1, v - 1))}
-                className="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 text-white font-bold hover:bg-gray-700 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                min={1}
-                max={160}
-                value={votesPerUser}
-                onChange={e => setVotesPerUser(Math.min(160, Math.max(1, parseInt(e.target.value) || 1)))}
-                className="w-20 bg-gray-800 text-white text-center rounded-lg px-2 py-1.5 text-sm border border-gray-700 focus:outline-none focus:border-indigo-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              <button
-                type="button"
-                onClick={() => setVotesPerUser(v => Math.min(160, v + 1))}
-                className="w-8 h-8 rounded-lg bg-gray-800 border border-gray-700 text-white font-bold hover:bg-gray-700 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                +
-              </button>
             </div>
           </div>
 
@@ -284,10 +263,10 @@ export default function Home() {
                   key={value}
                   type="button"
                   onClick={() => setVoteScope(value)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  className={`px-3 py-2 text-lg font-display uppercase border transition-colors ${
                     voteScope === value
-                      ? 'bg-indigo-600 border-indigo-500 text-white'
-                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                      ? 'bg-pink border-pink text-black'
+                      : 'bg-grayDark border-[#333333] text-gray-400 hover:border-gray-500'
                   }`}
                 >
                   {label}
@@ -296,9 +275,52 @@ export default function Home() {
             </div>
             <p className="text-xs text-gray-500 mt-1">
               {voteScope === 'overall'
-                ? 'One pool of votes shared across all days.'
-                : 'Fresh votes for each day.'}
+                ? 'Total votes to put on any day.'
+                : 'Total votes for each individual day.'}
             </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Votes per user
+            </label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVotesPerUser(v => Math.max(1, v - 1))}
+                  className="w-8 h-8 rounded-lg bg-white border border-[#333333] text-black font-bold hover:bg-gray-100 flex items-center justify-center"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  max={160}
+                  value={votesPerUser}
+                  onChange={e => setVotesPerUser(Math.min(160, Math.max(1, parseInt(e.target.value) || 1)))}
+                  className="w-20 bg-white text-black text-center px-2 py-1.5 text-sm border border-[#000000] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setVotesPerUser(v => Math.min(160, v + 1))}
+                  className="w-8 h-8 rounded-lg bg-white border border-[#333333] text-black font-bold hover:bg-gray-100 flex items-center justify-center"
+                >
+                  +
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAllowMultiVote(v => !v)}
+                className={`w-1/4 flex items-center justify-center py-2 border transition-colors ${
+                  allowMultiVote
+                    ? 'bg-tealgreen border-tealgreen text-black'
+                    : 'bg-grayDark border-[#333333] text-gray-400'
+                }`}
+              >
+                <span className="font-display uppercase text-base">Stack votes</span>
+              </button>
+            </div>
           </div>
 
           {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -306,7 +328,7 @@ export default function Home() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-lg px-4 py-2.5 text-sm transition-colors"
+            className="w-full bg-red hover:bg-red disabled:opacity-50 text-black font-display uppercase px-4 py-2.5 text-lg transition-colors"
           >
             {loading ? 'Creating…' : 'Create room'}
           </button>

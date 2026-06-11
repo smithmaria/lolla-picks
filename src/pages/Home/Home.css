@@ -1,0 +1,4 @@
+.home-card {
+  width: min(700px, 100%);
+  padding: 2rem 4rem;
+}

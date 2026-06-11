@@ -195,7 +195,7 @@ export default function Room() {
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl font-bold text-white">
-              {room.display_name ?? 'Lolla Scheduler'}
+              {room.display_name ?? 'Lolla Picks'}
             </h1>
             <button
               type="button"

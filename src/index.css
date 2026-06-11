@@ -1,3 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Golos+Text:wght@400..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  .font-display {
+    letter-spacing: 0.02em;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-black font-body;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display uppercase;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-tealDark;
+  }
+}
