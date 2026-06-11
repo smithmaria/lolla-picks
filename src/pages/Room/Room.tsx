@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useRoom } from '../../hooks/useRoom'
 import { useVotes } from '../../hooks/useVotes'
@@ -18,6 +18,7 @@ type UserVoteMap = Record<string, Record<string, number>>
 
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>()
+  const navigate = useNavigate()
   const { room, loading, notFound } = useRoom(roomId)
   const [session, setSession] = useState<LocalSession | null>(null)
   const [activeDay, setActiveDay] = useState<Day | null>(null)
@@ -43,7 +44,12 @@ export default function Room() {
     const stored = localStorage.getItem(`lolla-user-${roomId}`)
     if (stored) {
       try {
-        setSession(JSON.parse(stored) as LocalSession)
+        const parsed = JSON.parse(stored) as LocalSession
+        if (!parsed.display_name) {
+          localStorage.removeItem(`lolla-user-${roomId}`)
+        } else {
+          setSession(parsed)
+        }
       } catch {
         localStorage.removeItem(`lolla-user-${roomId}`)
       }
@@ -147,15 +153,15 @@ export default function Room() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <p className="text-gray-400">Loading…</p>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <p className="text-gray-400 font-display uppercase tracking-widest">Loading…</p>
       </div>
     )
   }
 
   if (notFound || !room) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <p className="text-2xl font-bold text-white mb-2">Room not found</p>
           <p className="text-gray-400 text-sm">
@@ -176,7 +182,7 @@ export default function Room() {
       : room.settings.votes_per_user
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-black">
       {!session && (
         <NameEntry
           roomId={room.id}
@@ -184,70 +190,89 @@ export default function Room() {
         />
       )}
 
-      {/* Narrow header controls */}
-      <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
+      {/* Header controls — matches schedule grid width */}
+      <div className="px-4 md:px-32 pt-6 pb-4">
         <Link
           to="/"
-          className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors mb-4"
+          className="inline-flex items-center gap-1 text-xs font-display uppercase text-gray-500 hover:text-gray-300 transition-colors mb-4"
         >
           ← Home
         </Link>
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-bold text-white">
+            <h1 className="text-white">
               {room.display_name ?? 'Lolla Picks'}
             </h1>
             <button
               type="button"
               onClick={copyLink}
-              className="text-xs font-medium px-3 py-1 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+              className="text-xs font-display uppercase px-3 py-1 border border-[#333333] text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
             >
               {copied ? 'Copied!' : 'Copy link'}
             </button>
+            {session?.is_admin && (
+              <button
+                type="button"
+                onClick={() => setAdminOpen(true)}
+                aria-label="Open admin panel"
+                className="text-gray-500 hover:text-yellow transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                  <circle cx="12" cy="12" r="3" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+              </button>
+            )}
           </div>
-          <p className="text-gray-400 text-sm">
-            {room.settings.vote_scope === 'per_day'
-              ? `${room.settings.votes_per_user} votes per day`
-              : `${room.settings.votes_per_user} votes total`}
-          </p>
-          {session?.is_admin && (
-            <button
-              type="button"
-              onClick={() => setAdminOpen(o => !o)}
-              className="text-indigo-400 text-xs mt-1 hover:text-indigo-300 transition-colors"
-            >
-              {adminOpen ? 'Hide admin panel ▲' : 'Admin panel ▼'}
-            </button>
-          )}
+          <div className="flex items-center gap-4">
+            <p className="text-gray-400 text-sm">
+              {room.settings.vote_scope === 'per_day'
+                ? `${room.settings.votes_per_user} votes per day`
+                : `${room.settings.votes_per_user} votes total`}
+            </p>
+            {session && (
+              <p className="text-sm text-gray-500">
+                voting as <span className="text-white font-medium">{session.display_name}</span>
+              </p>
+            )}
+          </div>
         </div>
 
-        {session?.is_admin && adminOpen && <AdminPanel room={room} />}
-
-        <DayTabs
-          days={room.settings.days}
-          activeDay={activeDay}
-          onChange={setActiveDay}
-        />
-
-        {session && (
-          <div className="mb-4">
-            <VoteBudget
-              remaining={remaining}
-              total={room.settings.votes_per_user}
-              scope={room.settings.vote_scope}
-              activeDay={
-                room.settings.vote_scope === 'per_day' && activeDay
-                  ? activeDay
-                  : undefined
-              }
-            />
-          </div>
+        {session?.is_admin && adminOpen && (
+          <AdminPanel
+            room={room}
+            onClose={() => setAdminOpen(false)}
+            onDeleted={() => navigate('/')}
+          />
         )}
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <DayTabs
+            days={room.settings.days}
+            activeDay={activeDay}
+            onChange={setActiveDay}
+          />
+
+          {session && (
+            <div className="sm:shrink-0">
+              <VoteBudget
+                remaining={remaining}
+                total={room.settings.votes_per_user}
+                scope={room.settings.vote_scope}
+                activeDay={
+                  room.settings.vote_scope === 'per_day' && activeDay
+                    ? activeDay
+                    : undefined
+                }
+              />
+            </div>
+          )}
+        </div>
 
         {votesError && (
           <div
             role="alert"
-            className="bg-red-900/50 border border-red-700 text-red-300 rounded-lg px-4 py-3 mb-4 text-sm"
+            className="bg-red/20 border border-red text-red px-4 py-3 mb-4 text-sm"
           >
             {votesError}
           </div>

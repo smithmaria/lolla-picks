@@ -24,17 +24,15 @@ export default function ArtistBlock({
 
   return (
     <div
-      className={`border border-gray-700 flex items-center relative overflow-hidden bg-gray-800 h-full ${
-        compact
-          ? 'rounded-lg p-1.5 gap-1'
-          : 'rounded-xl p-4 gap-4'
+      className={`border border-[#333333] flex items-center relative overflow-hidden bg-grayDark h-full ${
+        compact ? 'p-1.5 gap-1' : 'p-4 gap-4'
       }`}
     >
-      {/* Color intensity overlay */}
+      {/* Popularity intensity overlay — yellow tint */}
       {intensity > 0 && (
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ backgroundColor: `rgba(99, 102, 241, ${intensity})` }}
+          style={{ backgroundColor: `rgba(207, 223, 5, ${intensity})` }}
           aria-hidden="true"
         />
       )}
@@ -89,7 +87,7 @@ export default function ArtistBlock({
             onClick={() => onVote(-1)}
             disabled={!canDecrement}
             aria-label={`Remove vote from ${artist.name}`}
-            className={`rounded-full bg-gray-700 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            className={`bg-grayCustom hover:bg-[#3a3a3a] disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-tealDark ${
               compact ? 'w-5 h-5 text-xs' : 'w-8 h-8 text-lg'
             }`}
           >
@@ -111,7 +109,7 @@ export default function ArtistBlock({
             onClick={() => onVote(1)}
             disabled={!canIncrement}
             aria-label={`Add vote for ${artist.name}`}
-            className={`rounded-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+            className={`bg-yellow hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed text-black font-bold flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-tealDark ${
               compact ? 'w-5 h-5 text-xs' : 'w-8 h-8 text-lg'
             }`}
           >

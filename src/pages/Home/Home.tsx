@@ -116,7 +116,7 @@ export default function Home() {
     // 3. Store session in localStorage
     localStorage.setItem(
       `lolla-user-${room.id}`,
-      JSON.stringify({ user_id: roomUser.id, client_token: clientToken, is_admin: true })
+      JSON.stringify({ user_id: roomUser.id, client_token: clientToken, is_admin: true, display_name: creatorName.trim() })
     )
 
     navigate(`/room/${room.id}`)
@@ -275,8 +275,8 @@ export default function Home() {
             </div>
             <p className="text-xs text-gray-500 mt-1">
               {voteScope === 'overall'
-                ? 'Total votes to put on any day.'
-                : 'Total votes for each individual day.'}
+                ? 'Set the number of votes to use freely across all selected days.'
+                : 'Set the number of votes to use per day.'}
             </p>
           </div>
 
@@ -318,7 +318,7 @@ export default function Home() {
                     : 'bg-grayDark border-[#333333] text-gray-400'
                 }`}
               >
-                <span className="font-display uppercase text-base">Stack votes</span>
+                <span className="font-display uppercase text-base">Stack artist votes</span>
               </button>
             </div>
           </div>

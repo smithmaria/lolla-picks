@@ -124,7 +124,7 @@ function StageGrid({
       >
         {/* Time label header spacer */}
         <div
-          className="sticky top-0 z-20 bg-gray-950 border-b border-gray-800"
+          className="sticky top-0 z-20 bg-black border-b border-[#333333]"
           style={{ gridColumn: 1, gridRow: 1 }}
           aria-hidden="true"
         />
@@ -133,11 +133,11 @@ function StageGrid({
         {stages.map((stage, si) => (
           <div
             key={stage}
-            className="sticky top-0 z-20 bg-gray-950 border-b border-gray-800 flex items-end pb-1 px-1"
+            className="sticky top-0 z-20 bg-black border-b border-[#333333] flex items-end pb-1 px-1"
             style={{ gridColumn: si + 2, gridRow: 1 }}
             role="columnheader"
           >
-            <span className="text-xs font-semibold text-gray-400 truncate">{stage}</span>
+            <span className="text-xs font-display uppercase text-gray-400 truncate">{stage}</span>
           </div>
         ))}
 
@@ -150,7 +150,7 @@ function StageGrid({
           return (
             <div
               key={`hour-line-${hourMinutes}`}
-              className="pointer-events-none border-t border-gray-800/60"
+              className="pointer-events-none border-t border-[#333333]/60"
               style={{
                 gridColumn: `1 / -1`,
                 gridRow: rowStart,
@@ -342,7 +342,7 @@ export default function ScheduleGrid({
 
   if (artists.length === 0) {
     return (
-      <p className="text-gray-500 text-sm text-center py-8">
+      <p className="text-gray-500 text-sm text-center py-8 font-display uppercase">
         No artists scheduled for this day.
       </p>
     )
@@ -385,11 +385,11 @@ export default function ScheduleGrid({
             onClick={() => setStagePage(p => Math.max(0, p - 1))}
             disabled={clampedPage === 0}
             aria-label="Previous stages"
-            className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-8 h-8 bg-grayDark border border-[#333333] hover:bg-grayCustom disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark"
           >
             &#8592;
           </button>
-          <span className="text-xs text-gray-500" aria-live="polite">
+          <span className="text-xs text-gray-500 font-display uppercase" aria-live="polite">
             Stages {clampedPage * MOBILE_STAGES_PER_PAGE + 1}–
             {Math.min((clampedPage + 1) * MOBILE_STAGES_PER_PAGE, stages.length)} of{' '}
             {stages.length}
@@ -400,7 +400,7 @@ export default function ScheduleGrid({
             onClick={() => setStagePage(p => Math.min(totalPages - 1, p + 1))}
             disabled={clampedPage >= totalPages - 1}
             aria-label="Next stages"
-            className="w-8 h-8 rounded-full bg-gray-800 hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-8 h-8 bg-grayDark border border-[#333333] hover:bg-grayCustom disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark"
           >
             &#8594;
           </button>

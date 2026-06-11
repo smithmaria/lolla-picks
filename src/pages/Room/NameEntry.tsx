@@ -92,6 +92,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
         user_id: data.id as string,
         client_token: clientToken,
         is_admin: data.is_admin as boolean,
+        display_name: trimmed,
       }
       localStorage.setItem(`lolla-user-${roomId}`, JSON.stringify(session))
       onSuccess(session)
@@ -114,6 +115,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
         user_id: existing.id,
         client_token: existing.client_token,
         is_admin: existing.is_admin,
+        display_name: trimmed,
       }
       localStorage.setItem(`lolla-user-${roomId}`, JSON.stringify(session))
       onSuccess(session)
@@ -128,10 +130,10 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
       aria-labelledby="name-entry-title"
       aria-describedby="name-entry-desc"
     >
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+      <div className="bg-grayCustom border border-[#333333] w-full max-w-sm p-6 shadow-2xl">
         <h2
           id="name-entry-title"
-          className="text-xl font-bold text-white mb-1"
+          className="text-2xl font-bold text-white mb-1"
         >
           Join the room
         </h2>
@@ -158,7 +160,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
                 placeholder="e.g. Jess"
-                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] placeholder-gray-400 focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />
             </div>
 
@@ -172,7 +174,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
               type="submit"
               data-testid="name-continue-button"
               disabled={submitting}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-lg py-2 transition-colors"
+              className="w-full bg-yellow hover:opacity-90 disabled:opacity-50 text-black font-display uppercase py-2.5 text-lg transition-colors"
             >
               {submitting ? 'Checking…' : 'Continue'}
             </button>
@@ -209,7 +211,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Choose a password"
-                className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] placeholder-gray-400 focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />
             </div>
 
@@ -228,7 +230,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
                   setError(null)
                   setPassword('')
                 }}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg py-2 transition-colors"
+                className="flex-1 bg-grayDark hover:bg-[#2a2a2a] text-white font-display uppercase py-2.5 text-lg transition-colors"
               >
                 Back
               </button>
@@ -236,7 +238,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
                 type="submit"
                 data-testid="password-submit-button"
                 disabled={submitting || !password}
-                className="flex-2 flex-grow bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-lg py-2 transition-colors"
+                className="flex-2 flex-grow bg-yellow hover:opacity-90 disabled:opacity-50 text-black font-display uppercase py-2.5 text-lg transition-colors"
               >
                 {submitting
                   ? flow === 'new_user'

@@ -6,6 +6,7 @@ export interface RoomSettings {
   days: Day[]
   votes_per_user: number
   vote_scope: VoteScope
+  allow_multi_vote?: boolean
 }
 
 export interface Room {
@@ -30,6 +31,7 @@ export interface LocalSession {
   user_id: string
   client_token: string
   is_admin: boolean
+  display_name: string
 }
 
 export interface Vote {

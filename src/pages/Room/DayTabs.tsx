@@ -6,10 +6,17 @@ interface Props {
   onChange: (day: Day) => void
 }
 
+const DAY_ACTIVE: Record<Day, string> = {
+  thursday: 'bg-teal border-teal text-black',
+  friday: 'bg-blue2 border-blue2 text-black',
+  saturday: 'bg-blue3 border-blue3 text-black',
+  sunday: 'bg-tealgreen border-tealgreen text-black',
+}
+
 export default function DayTabs({ days, activeDay, onChange }: Props) {
   return (
     <div
-      className="flex gap-2 mb-4"
+      className="flex gap-2 flex-wrap"
       role="tablist"
       aria-label="Festival days"
     >
@@ -23,10 +30,10 @@ export default function DayTabs({ days, activeDay, onChange }: Props) {
           aria-controls={`panel-${day}`}
           data-testid={`day-tab-${day}`}
           onClick={() => onChange(day)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+          className={`px-4 py-2 border text-lg font-display uppercase transition-colors focus:outline-none focus:ring-2 focus:ring-tealDark ${
             activeDay === day
-              ? 'bg-indigo-600 text-white'
-              : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+              ? DAY_ACTIVE[day]
+              : 'bg-grayDark border-[#333333] text-gray-400 hover:border-gray-500'
           }`}
         >
           {day}

@@ -4,6 +4,8 @@ import type { Day, Room, VoteScope } from '../../types'
 
 interface Props {
   room: Room
+  onClose: () => void
+  onDeleted: () => void
 }
 
 const ALL_DAYS: { value: Day; label: string }[] = [
@@ -13,20 +15,29 @@ const ALL_DAYS: { value: Day; label: string }[] = [
   { value: 'sunday', label: 'Sun' },
 ]
 
-export default function AdminPanel({ room }: Props) {
+const DAY_ACTIVE: Record<Day, string> = {
+  thursday: 'bg-teal border-teal text-black',
+  friday: 'bg-blue2 border-blue2 text-black',
+  saturday: 'bg-blue3 border-blue3 text-black',
+  sunday: 'bg-tealgreen border-tealgreen text-black',
+}
+
+export default function AdminPanel({ room, onClose, onDeleted }: Props) {
   const [days, setDays] = useState<Day[]>(room.settings.days)
   const [votesPerUser, setVotesPerUser] = useState(room.settings.votes_per_user)
   const [voteScope, setVoteScope] = useState<VoteScope>(room.settings.vote_scope)
+  const [allowMultiVote, setAllowMultiVote] = useState(room.settings.allow_multi_vote ?? true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [savedMsg, setSavedMsg] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
-  // Keep local state in sync when room updates via realtime
   useEffect(() => {
     setDays(room.settings.days)
     setVotesPerUser(room.settings.votes_per_user)
     setVoteScope(room.settings.vote_scope)
-  }, [room.settings.days, room.settings.votes_per_user, room.settings.vote_scope])
+    setAllowMultiVote(room.settings.allow_multi_vote ?? true)
+  }, [room.settings.days, room.settings.votes_per_user, room.settings.vote_scope, room.settings.allow_multi_vote])
 
   function toggleDay(day: Day) {
     setDays(prev =>
@@ -43,107 +54,201 @@ export default function AdminPanel({ room }: Props) {
     setError(null)
     const { error: err } = await supabase
       .from('rooms')
-      .update({ settings: { days, votes_per_user: votesPerUser, vote_scope: voteScope } })
+      .update({
+        settings: {
+          days,
+          votes_per_user: votesPerUser,
+          vote_scope: voteScope,
+          allow_multi_vote: allowMultiVote,
+        },
+      })
       .eq('id', room.id)
     setSaving(false)
     if (err) {
       setError('Failed to save settings.')
       return
     }
-    setSavedMsg(true)
-    setTimeout(() => setSavedMsg(false), 2000)
+    onClose()
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    setError(null)
+    await supabase.from('votes').delete().eq('room_id', room.id)
+    const { error: err } = await supabase.from('rooms').delete().eq('id', room.id)
+    setDeleting(false)
+    if (err) {
+      setError('Failed to delete room.')
+      setConfirmDelete(false)
+      return
+    }
+    onDeleted()
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-xl p-5 mb-6">
-      <h2 className="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-4">
-        Admin Panel
-      </h2>
-
-      <div className="space-y-4">
-        <div>
-          <p className="text-xs font-medium text-gray-400 mb-2">Active days</p>
-          <div className="flex gap-2">
-            {ALL_DAYS.map(({ value, label }) => (
+    <div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="admin-panel-title"
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="bg-grayCustom border border-[#333333] w-full max-w-sm shadow-2xl overflow-hidden">
+        {confirmDelete ? (
+          <>
+            <div className="p-6 pb-5">
+              <h2 className="text-2xl font-bold text-white mb-2">Delete room?</h2>
+              <p className="text-gray-400 text-sm">
+                This will permanently delete the room and all votes. This cannot be undone.
+              </p>
+              {error && <p className="text-red-400 text-sm mt-3">{error}</p>}
+            </div>
+            <div className="bg-black px-6 py-4 flex items-center justify-between gap-3">
               <button
-                key={value}
                 type="button"
-                onClick={() => toggleDay(value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  days.includes(value)
-                    ? 'bg-indigo-600 border-indigo-500 text-white'
-                    : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
-                }`}
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="border border-[#333333] text-gray-400 hover:text-white text-base font-display uppercase px-4 py-2.5 transition-colors"
               >
-                {label}
+                Cancel
               </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs font-medium text-gray-400 mb-2">Votes per person</p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setVotesPerUser(v => Math.max(1, v - 1))}
-              className="w-7 h-7 rounded-lg bg-gray-800 border border-gray-700 text-white font-bold hover:bg-gray-700 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              −
-            </button>
-            <input
-              type="number"
-              min={1}
-              max={160}
-              value={votesPerUser}
-              onChange={e => setVotesPerUser(Math.min(160, Math.max(1, parseInt(e.target.value) || 1)))}
-              className="w-16 bg-gray-800 text-white text-center rounded-lg px-2 py-1 text-xs border border-gray-700 focus:outline-none focus:border-indigo-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-            />
-            <button
-              type="button"
-              onClick={() => setVotesPerUser(v => Math.min(160, v + 1))}
-              className="w-7 h-7 rounded-lg bg-gray-800 border border-gray-700 text-white font-bold hover:bg-gray-700 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              +
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs font-medium text-gray-400 mb-2">Vote budget</p>
-          <div className="flex gap-2">
-            {([['overall', 'Overall'], ['per_day', 'Per day']] as [VoteScope, string][]).map(
-              ([value, label]) => (
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                disabled={deleting}
+                className="bg-red hover:opacity-90 disabled:opacity-50 text-white text-base font-display uppercase px-5 py-2.5 transition-colors"
+              >
+                {deleting ? 'Deleting…' : 'Delete room'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="p-6 pb-5">
+              <div className="flex items-start justify-between mb-5">
+                <h2 id="admin-panel-title" className="text-2xl font-bold text-white">
+                  Admin Panel
+                </h2>
                 <button
-                  key={value}
                   type="button"
-                  onClick={() => setVoteScope(value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                    voteScope === value
-                      ? 'bg-indigo-600 border-indigo-500 text-white'
-                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
-                  }`}
+                  onClick={onClose}
+                  aria-label="Close admin panel"
+                  className="text-gray-500 hover:text-white transition-colors text-lg leading-none mt-1"
                 >
-                  {label}
+                  ✕
                 </button>
-              ),
-            )}
-          </div>
-        </div>
+              </div>
 
-        {error && <p className="text-red-400 text-xs">{error}</p>}
+              <div className="space-y-5">
+                {/* Active days */}
+                <div>
+                  <p className="text-sm font-medium text-gray-400 mb-2">Active days</p>
+                  <div className="flex gap-2">
+                    {ALL_DAYS.map(({ value, label }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => toggleDay(value)}
+                        className={`px-4 py-2 text-base font-display uppercase border transition-colors ${
+                          days.includes(value)
+                            ? DAY_ACTIVE[value]
+                            : 'bg-grayDark border-[#333333] text-gray-400 hover:border-gray-500'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold rounded-lg px-4 py-2 transition-colors"
-          >
-            {saving ? 'Saving…' : 'Save settings'}
-          </button>
-          {savedMsg && <span className="text-green-400 text-xs">Saved!</span>}
-        </div>
+                {/* Vote budget */}
+                <div>
+                  <p className="text-sm font-medium text-gray-400 mb-2">Vote budget</p>
+                  <div className="flex gap-2">
+                    {([['overall', 'Overall'], ['per_day', 'Per day']] as [VoteScope, string][]).map(
+                      ([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setVoteScope(value)}
+                          className={`px-4 py-2 text-base font-display uppercase border transition-colors ${
+                            voteScope === value
+                              ? 'bg-pink border-pink text-black'
+                              : 'bg-grayDark border-[#333333] text-gray-400 hover:border-gray-500'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </div>
+
+                {/* Votes per person + stack votes */}
+                <div>
+                  <p className="text-sm font-medium text-gray-400 mb-2">Votes per person</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setVotesPerUser(v => Math.max(1, v - 1))}
+                        className="w-9 h-9 bg-white border border-[#333333] text-black font-bold hover:bg-gray-100 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark text-lg"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={160}
+                        value={votesPerUser}
+                        onChange={e => setVotesPerUser(Math.min(160, Math.max(1, parseInt(e.target.value) || 1)))}
+                        className="w-20 bg-white text-black text-center px-2 py-1.5 text-sm border border-[#000000] focus:outline-none focus:border-tealDark [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setVotesPerUser(v => Math.min(160, v + 1))}
+                        className="w-9 h-9 bg-white border border-[#333333] text-black font-bold hover:bg-gray-100 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark text-lg"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAllowMultiVote(v => !v)}
+                      className={`px-4 py-2 border text-base font-display uppercase transition-colors ${
+                        allowMultiVote
+                          ? 'bg-tealgreen border-tealgreen text-black'
+                          : 'bg-grayDark border-[#333333] text-gray-400'
+                      }`}
+                    >
+                      Stack votes
+                    </button>
+                  </div>
+                </div>
+
+                {error && <p className="text-red-400 text-sm">{error}</p>}
+              </div>
+            </div>
+
+            <div className="bg-black px-6 py-4 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="border border-grayCustom text-red/75 hover:text-red hover:border-red/50 text-base font-display uppercase px-4 py-2.5 transition-colors"
+              >
+                Delete room
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleSave()}
+                disabled={saving}
+                className="bg-yellow hover:opacity-90 disabled:opacity-50 text-black text-base font-display uppercase px-5 py-2.5 transition-colors"
+              >
+                {saving ? 'Saving…' : 'Save settings'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
