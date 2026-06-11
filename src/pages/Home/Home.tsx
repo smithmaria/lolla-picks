@@ -10,9 +10,18 @@ const ALL_DAYS: { value: Day; label: string }[] = [
   { value: 'sunday', label: 'Sunday' },
 ]
 
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
+
 export default function Home() {
   const navigate = useNavigate()
 
+  const [tab, setTab] = useState<'create' | 'join'>('create')
+
+  // Join state
+  const [joinInput, setJoinInput] = useState('')
+  const [joinError, setJoinError] = useState<string | null>(null)
+
+  // Create state
   const [creatorName, setCreatorName] = useState('')
   const [creatorPassword, setCreatorPassword] = useState('')
   const [roomDisplayName, setRoomDisplayName] = useState('')
@@ -22,6 +31,17 @@ export default function Home() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  function handleJoin(e: React.FormEvent) {
+    e.preventDefault()
+    setJoinError(null)
+    const match = joinInput.match(UUID_RE)
+    if (!match) {
+      setJoinError('Paste a valid room link or room ID.')
+      return
+    }
+    navigate(`/room/${match[0]}`)
+  }
 
   function toggleDay(day: Day) {
     setSelectedDays(prev =>
@@ -102,10 +122,53 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-gray-900 rounded-xl p-8 shadow-xl">
-        <h1 className="text-2xl font-bold text-white mb-2">Lolla Scheduler</h1>
-        <p className="text-gray-400 text-sm mb-6">Create a room and share the link with your group.</p>
+        <h1 className="text-2xl font-bold text-white mb-6">Lolla Scheduler</h1>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Tab toggle */}
+        <div className="flex gap-1 bg-gray-800 rounded-lg p-1 mb-6">
+          {(['create', 'join'] as const).map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                tab === t
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {t === 'create' ? 'Create a room' : 'Join a room'}
+            </button>
+          ))}
+        </div>
+
+        {/* Join form */}
+        {tab === 'join' && (
+          <form onSubmit={handleJoin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Room link or ID
+              </label>
+              <input
+                type="text"
+                value={joinInput}
+                onChange={e => setJoinInput(e.target.value)}
+                placeholder="Paste link or room ID"
+                className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-700 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            {joinError && <p className="text-red-400 text-sm">{joinError}</p>}
+            <button
+              type="submit"
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg px-4 py-2.5 text-sm transition-colors"
+            >
+              Go to room
+            </button>
+          </form>
+        )}
+
+        {/* Create form */}
+        {tab === 'create' && <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Your name</label>
             <input
@@ -247,7 +310,7 @@ export default function Home() {
           >
             {loading ? 'Creating…' : 'Create room'}
           </button>
-        </form>
+        </form>}
       </div>
     </div>
   )

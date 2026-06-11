@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useRoom } from '../../hooks/useRoom'
 import { useVotes } from '../../hooks/useVotes'
@@ -186,6 +186,12 @@ export default function Room() {
 
       {/* Narrow header controls */}
       <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors mb-4"
+        >
+          ← Home
+        </Link>
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl font-bold text-white">
