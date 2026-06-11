@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useVotes } from '../../hooks/useVotes'
+import DayTabs from './DayTabs'
 import NameEntry from './NameEntry'
-import ArtistBlock from './ArtistBlock'
+import ScheduleGrid from './ScheduleGrid'
 import VoteBudget from './VoteBudget'
 import lineup from '../../data/lineup-2026.json'
 import type { Artist, Day, LocalSession, Room as RoomType, RoomSettings } from '../../types'
@@ -17,6 +18,9 @@ export default function Room() {
   const [activeDay, setActiveDay] = useState<Day | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  // Seed: aggregate from all users fetched at load time
+  const [roomVotesSeed, setRoomVotesSeed] = useState<Record<string, number>>({})
+  const [seedUserVotes, setSeedUserVotes] = useState<Record<string, number>>({})
 
   const fallbackSettings = useMemo<RoomSettings>(
     () => ({ days: [], votes_per_user: 0, vote_scope: 'overall' }),
@@ -36,22 +40,52 @@ export default function Room() {
     }
 
     async function fetchRoom() {
-      const { data, error } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('id', roomId)
-        .single()
+      const [roomResult, votesResult] = await Promise.all([
+        supabase.from('rooms').select('*').eq('id', roomId).single(),
+        supabase
+          .from('votes')
+          .select('artist_id, vote_count, user_id')
+          .eq('room_id', roomId),
+      ])
 
       setLoading(false)
 
-      if (error || !data) {
+      if (roomResult.error || !roomResult.data) {
         setNotFound(true)
         return
       }
 
-      const fetched = data as RoomType
+      const fetched = roomResult.data as RoomType
       setRoom(fetched)
       setActiveDay(fetched.settings.days[0] ?? null)
+
+      if (!votesResult.error && votesResult.data) {
+        const aggregate: Record<string, number> = {}
+        const userSeed: Record<string, number> = {}
+
+        // Parse current user id from localStorage (set earlier in this effect)
+        let currentUserId: string | null = null
+        const stored = localStorage.getItem(`lolla-user-${roomId}`)
+        if (stored) {
+          try {
+            currentUserId = (JSON.parse(stored) as { user_id: string }).user_id
+          } catch {
+            // ignore
+          }
+        }
+
+        for (const row of votesResult.data) {
+          const id = row.artist_id as string
+          const count = row.vote_count as number
+          const uid = row.user_id as string
+          aggregate[id] = (aggregate[id] ?? 0) + count
+          if (currentUserId && uid === currentUserId) {
+            userSeed[id] = count
+          }
+        }
+        setRoomVotesSeed(aggregate)
+        setSeedUserVotes(userSeed)
+      }
     }
 
     fetchRoom()
@@ -61,6 +95,31 @@ export default function Room() {
     roomId ?? '',
     session?.user_id ?? '',
     room?.settings ?? fallbackSettings,
+  )
+
+  /**
+   * Keep aggregate votes current as the user casts votes.
+   * Formula: seed aggregate − user's seed votes + user's current live votes.
+   * This means other users' votes from the seed remain intact, and the current
+   * user's contribution reflects their real-time state.
+   */
+  const allRoomVotes = useMemo(() => {
+    const merged = { ...roomVotesSeed }
+    // Remove seed user votes and apply live user votes (clamp to 0 to guard against race conditions)
+    for (const [id, seedCount] of Object.entries(seedUserVotes)) {
+      merged[id] = Math.max(0, (merged[id] ?? 0) - seedCount)
+    }
+    for (const [id, liveCount] of Object.entries(votesByArtist)) {
+      merged[id] = (merged[id] ?? 0) + liveCount
+    }
+    return merged
+  }, [roomVotesSeed, seedUserVotes, votesByArtist])
+
+  const handleVote = useCallback(
+    (artistId: string, delta: 1 | -1) => {
+      if (session) void castVote(artistId, delta)
+    },
+    [session, castVote],
   )
 
   if (loading) {
@@ -85,6 +144,7 @@ export default function Room() {
   }
 
   const locked = room.status === 'locked'
+
   const dayArtists = activeDay
     ? allArtists.filter(a => a.day === activeDay)
     : []
@@ -103,8 +163,8 @@ export default function Room() {
         />
       )}
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Header */}
+      {/* Narrow header controls */}
+      <div className="max-w-2xl mx-auto px-4 pt-6 pb-4">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white mb-1">
             {room.display_name ?? 'Lolla Scheduler'}
@@ -124,34 +184,12 @@ export default function Room() {
           )}
         </div>
 
-        {/* Day tabs */}
-        <div
-          className="flex gap-2 mb-4"
-          role="tablist"
-          aria-label="Festival days"
-        >
-          {room.settings.days.map(day => (
-            <button
-              key={day}
-              type="button"
-              role="tab"
-              id={`tab-${day}`}
-              aria-selected={activeDay === day}
-              aria-controls={`panel-${day}`}
-              data-testid={`day-tab-${day}`}
-              onClick={() => setActiveDay(day)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                activeDay === day
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              {day}
-            </button>
-          ))}
-        </div>
+        <DayTabs
+          days={room.settings.days}
+          activeDay={activeDay}
+          onChange={setActiveDay}
+        />
 
-        {/* Vote budget */}
         {session && (
           <div className="mb-4">
             <VoteBudget
@@ -167,7 +205,6 @@ export default function Room() {
           </div>
         )}
 
-        {/* Error banner */}
         {votesError && (
           <div
             role="alert"
@@ -176,34 +213,25 @@ export default function Room() {
             {votesError}
           </div>
         )}
+      </div>
 
-        {/* Artist list — tabpanel */}
+      {/* Full-width schedule grid */}
+      <div className="px-32 pb-8">
         <div
           id={activeDay ? `panel-${activeDay}` : undefined}
           role="tabpanel"
           aria-labelledby={activeDay ? `tab-${activeDay}` : undefined}
-          className="flex flex-col gap-3"
+          tabIndex={0}
+          className="focus:outline-none"
         >
-          {dayArtists.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center py-8">
-              No artists scheduled for this day.
-            </p>
-          ) : (
-            dayArtists.map(artist => (
-              <ArtistBlock
-                key={artist.id}
-                artist={artist}
-                voteCount={votesByArtist[artist.id] ?? 0}
-                onVote={delta => {
-                  if (session) {
-                    void castVote(artist.id, delta)
-                  }
-                }}
-                locked={locked || !session}
-                remainingBudget={remaining}
-              />
-            ))
-          )}
+          <ScheduleGrid
+            artists={dayArtists}
+            votesByArtist={votesByArtist}
+            allRoomVotes={allRoomVotes}
+            onVote={handleVote}
+            locked={locked || !session}
+            remainingBudget={remaining}
+          />
         </div>
       </div>
     </div>
