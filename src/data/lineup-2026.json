@@ -114,7 +114,7 @@
   { "id": "sat-tm-2", "name": "Cortis", "stage": "T-Mobile", "day": "saturday", "start": "14:55", "end": "15:45" },
   { "id": "sat-tm-3", "name": "Leon Thomas", "stage": "T-Mobile", "day": "saturday", "start": "16:30", "end": "17:30" },
   { "id": "sat-tm-4", "name": "The Neighbourhood", "stage": "T-Mobile", "day": "saturday", "start": "18:30", "end": "19:30" },
-  { "id": "sat-tm-5", "name": "Olivia Dean", "stage": "T-Mobile", "day": "saturday", "start": "20:30", "end": "21:45" },
+  { "id": "sat-tm-5", "name": "Olivia Dean", "stage": "T-Mobile", "day": "saturday", "start": "20:30", "end": "22:00" },
 
   { "id": "sat-pe-1", "name": "Peace Control", "stage": "Perry's", "day": "saturday", "start": "12:00", "end": "12:30" },
   { "id": "sat-pe-2", "name": "MC4D", "stage": "Perry's", "day": "saturday", "start": "12:45", "end": "13:30" },
