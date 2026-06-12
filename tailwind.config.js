@@ -14,6 +14,7 @@ export default {
         black: '#17120f',
         grayDark: '#222222',
         grayCustom: '#2e2e2e',
+        grayLight: '#b0b0b0',
         white: '#fffeff',
         pink: '#ecade6',
         teal: '#32c2e2',

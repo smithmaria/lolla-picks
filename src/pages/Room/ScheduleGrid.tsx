@@ -9,6 +9,8 @@ interface Props {
   onVote: (artistId: string, delta: 1 | -1) => void
   locked: boolean
   remainingBudget: number
+  allowMultiVote: boolean
+  editMode: boolean
 }
 
 interface StageGridProps {
@@ -20,7 +22,10 @@ interface StageGridProps {
   onVote: (artistId: string, delta: 1 | -1) => void
   locked: boolean
   remainingBudget: number
+  allowMultiVote: boolean
+  editMode: boolean
   maxVotes: number
+  maxUserVotes: number
   gridStart: number
   gridEnd: number
   totalSlots: number
@@ -65,11 +70,6 @@ function formatHour(minutes: number): string {
   return h < 12 ? `${h} AM` : `${h - 12} PM`
 }
 
-/**
- * Cap intensity so text contrast stays above WCAG AA on a gray-800 base.
- * rgba(99,102,241) at ~0.45 alpha over #1f2937 produces sufficient contrast.
- */
-const MAX_INTENSITY = 0.45
 const SLOT_MINUTES = 15
 const MOBILE_STAGES_PER_PAGE = 3
 
@@ -98,7 +98,10 @@ function StageGrid({
   onVote,
   locked,
   remainingBudget,
+  allowMultiVote,
+  editMode,
   maxVotes,
+  maxUserVotes,
   gridStart,
   gridEnd,
   totalSlots,
@@ -210,9 +213,7 @@ function StageGrid({
             const rowStart = startSlot + 2
             const rowEnd = endSlot + 2
 
-            const totalArtistVotes = allRoomVotes[artist.id] ?? 0
-            const rawIntensity = maxVotes > 0 ? totalArtistVotes / maxVotes : 0
-            const intensity = rawIntensity * MAX_INTENSITY
+            const aggregateVotes = allRoomVotes[artist.id] ?? 0
             const userVotes = votesByArtist[artist.id] ?? 0
 
             return (
@@ -230,10 +231,14 @@ function StageGrid({
                   <ArtistBlock
                     artist={artist}
                     voteCount={userVotes}
+                    aggregateVotes={aggregateVotes}
+                    maxVotes={maxVotes}
+                    maxUserVotes={maxUserVotes}
                     onVote={delta => onVote(artist.id, delta)}
                     locked={locked}
                     remainingBudget={remainingBudget}
-                    intensity={intensity}
+                    allowMultiVote={allowMultiVote}
+                    editMode={editMode}
                     compact
                   />
                 </div>
@@ -252,6 +257,8 @@ export default function ScheduleGrid({
   onVote,
   locked,
   remainingBudget,
+  allowMultiVote,
+  editMode,
 }: Props) {
   const [stagePage, setStagePage] = useState(0)
   const touchStartX = useRef<number | null>(null)
@@ -310,11 +317,17 @@ export default function ScheduleGrid({
     return { gridStart: start, gridEnd: end, totalSlots: total, hourMarkers: hours }
   }, [artists])
 
-  // Max aggregate votes for intensity normalization
+  // Max aggregate votes for view mode color gradient
   const maxVotes = useMemo(() => {
     const values = Object.values(allRoomVotes)
     return values.length > 0 ? Math.max(...values) : 0
   }, [allRoomVotes])
+
+  // Max personal votes for edit mode multi-vote color gradient
+  const maxUserVotes = useMemo(() => {
+    const values = Object.values(votesByArtist)
+    return values.length > 0 ? Math.max(...values) : 0
+  }, [votesByArtist])
 
   const totalPages = Math.ceil(stages.length / MOBILE_STAGES_PER_PAGE)
   const clampedPage = Math.min(stagePage, Math.max(0, totalPages - 1))
@@ -369,7 +382,10 @@ export default function ScheduleGrid({
     onVote,
     locked,
     remainingBudget,
+    allowMultiVote,
+    editMode,
     maxVotes,
+    maxUserVotes,
     gridStart,
     gridEnd,
     totalSlots,

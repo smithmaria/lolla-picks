@@ -25,6 +25,7 @@ export default function Room() {
   const [allUserVotes, setAllUserVotes] = useState<UserVoteMap>({})
   const [adminOpen, setAdminOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [editMode, setEditMode] = useState(true)
 
   function copyLink() {
     void navigator.clipboard.writeText(window.location.href).then(() => {
@@ -253,8 +254,32 @@ export default function Room() {
             onChange={setActiveDay}
           />
 
-          {session && (
-            <div className="sm:shrink-0">
+          <div className="flex items-center gap-4 sm:shrink-0">
+            <div className="flex border border-[#333333] text-sm font-display uppercase">
+              <button
+                type="button"
+                onClick={() => setEditMode(true)}
+                className={`px-5 py-2.5 transition-colors ${
+                  editMode
+                    ? 'bg-yellow text-black'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                My Picks
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditMode(false)}
+                className={`px-5 py-2.5 transition-colors border-l border-[#333333] ${
+                  !editMode
+                    ? 'bg-yellow text-black'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Room Votes
+              </button>
+            </div>
+            {session && (
               <VoteBudget
                 remaining={remaining}
                 total={room.settings.votes_per_user}
@@ -265,8 +290,8 @@ export default function Room() {
                     : undefined
                 }
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {votesError && (
@@ -295,6 +320,8 @@ export default function Room() {
             onVote={handleVote}
             locked={!session}
             remainingBudget={remaining}
+            allowMultiVote={room.settings.allow_multi_vote ?? false}
+            editMode={editMode}
           />
         </div>
       </div>
