@@ -1,8 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './Home.css'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import type { Day, VoteScope } from '../../types'
+
+interface SavedRoom {
+  roomId: string
+  displayName: string | null
+  userName: string
+}
 
 const ALL_DAYS: { value: Day; label: string }[] = [
   { value: 'thursday', label: 'Thursday' },
@@ -16,7 +22,38 @@ const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
 export default function Home() {
   const navigate = useNavigate()
 
+  const [savedRooms, setSavedRooms] = useState<SavedRoom[]>([])
   const [tab, setTab] = useState<'create' | 'join'>('create')
+
+  useEffect(() => {
+    const roomIds: { roomId: string; userName: string }[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (!key?.startsWith('lolla-user-')) continue
+      const roomId = key.slice('lolla-user-'.length)
+      try {
+        const parsed = JSON.parse(localStorage.getItem(key) ?? '') as { display_name?: string }
+        if (parsed.display_name) roomIds.push({ roomId, userName: parsed.display_name })
+      } catch { /* ignore */ }
+    }
+    if (roomIds.length === 0) return
+
+    setTab('join')
+
+    supabase
+      .from('rooms')
+      .select('id, display_name')
+      .in('id', roomIds.map(r => r.roomId))
+      .then(({ data }) => {
+        if (!data) return
+        const nameMap = Object.fromEntries(data.map(r => [r.id as string, r.display_name as string | null]))
+        setSavedRooms(
+          roomIds
+            .filter(r => r.roomId in nameMap)
+            .map(r => ({ roomId: r.roomId, displayName: nameMap[r.roomId], userName: r.userName }))
+        )
+      })
+  }, [])
 
   // Join state
   const [joinInput, setJoinInput] = useState('')
@@ -147,6 +184,28 @@ export default function Home() {
 
         {/* Join form */}
         {tab === 'join' && (
+          <div className="space-y-4">
+            {savedRooms.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-gray-400 mb-2">Your rooms</p>
+                <ul className="divide-y divide-[#333333] border border-[#333333]">
+                  {savedRooms.map(r => (
+                    <li key={r.roomId}>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/room/${r.roomId}`)}
+                        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 bg-grayDark hover:bg-[#2a2a2a] transition-colors text-left"
+                      >
+                        <span className="text-white text-sm font-medium truncate">
+                          {r.displayName ?? 'Lolla Picks'}
+                        </span>
+                        <span className="text-gray-500 text-xs shrink-0">{r.userName}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           <form onSubmit={handleJoin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -168,6 +227,7 @@ export default function Home() {
               Go to room
             </button>
           </form>
+          </div>
         )}
 
         {/* Create form */}
