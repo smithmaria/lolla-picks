@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ArtistBlock from './ArtistBlock'
 import {
   SLOT_MINUTES,
@@ -49,21 +49,31 @@ interface StageGridProps {
   onTouchEnd: (e: React.TouchEvent) => void
 }
 
-const MOBILE_STAGES_PER_PAGE = 3
+// Narrowest a stage column can get before names become unreadable —
+// once columns would drop below this, the grid paginates instead of squeezing.
+const MIN_STAGE_COLUMN_PX = 160
+// Width of the time-label column (4rem)
+const TIME_COLUMN_PX = 64
 
-/** Subscribe to a CSS media query, returns true when the query matches. */
-function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
+/** Observe an element's content-box width. Callback ref survives conditional rendering. */
+function useContainerWidth(): [(el: HTMLElement | null) => void, number] {
+  const [width, setWidth] = useState(0)
+  const observerRef = useRef<ResizeObserver | null>(null)
 
-  useEffect(() => {
-    const mql = window.matchMedia(query)
-    setMatches(mql.matches)
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches)
-    mql.addEventListener('change', handler)
-    return () => mql.removeEventListener('change', handler)
-  }, [query])
+  const ref = useCallback((el: HTMLElement | null) => {
+    observerRef.current?.disconnect()
+    observerRef.current = null
+    if (!el) return
+    setWidth(el.clientWidth)
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0]
+      if (entry) setWidth(entry.contentRect.width)
+    })
+    observer.observe(el)
+    observerRef.current = observer
+  }, [])
 
-  return matches
+  return [ref, width]
 }
 
 /** Renders the actual CSS grid for a given set of visible stages */
@@ -254,7 +264,7 @@ export default function ScheduleGrid({
 }: Props) {
   const [stagePage, setStagePage] = useState(0)
   const touchStartX = useRef<number | null>(null)
-  const isDesktop = useMediaQuery('(min-width: 768px)')
+  const [containerRef, containerWidth] = useContainerWidth()
 
   // Reset page when the artist list changes (day switch)
   useEffect(() => {
@@ -273,12 +283,6 @@ export default function ScheduleGrid({
     }
     return result
   }, [artists])
-
-  // O(1) stage → column index lookup for all stages
-  const stageIndexMap = useMemo(
-    () => new Map(stages.map((s, i) => [s, i])),
-    [stages],
-  )
 
   // Derive grid time bounds — floored/ceiled to the hour, midnight-aware
   const { gridStart, gridEnd, totalSlots, hourMarkers } = useMemo(() => {
@@ -321,23 +325,36 @@ export default function ScheduleGrid({
     return values.length > 0 ? Math.max(...values) : 0
   }, [votesByArtist])
 
-  const totalPages = Math.ceil(stages.length / MOBILE_STAGES_PER_PAGE)
+  // How many stage columns fit at a readable width. Until the container is
+  // measured (width 0), assume everything fits to avoid a pagination flash.
+  const stagesPerPage =
+    containerWidth > 0
+      ? Math.max(
+          1,
+          Math.min(
+            stages.length,
+            Math.floor((containerWidth - TIME_COLUMN_PX) / MIN_STAGE_COLUMN_PX),
+          ),
+        )
+      : stages.length
+
+  const totalPages = Math.ceil(stages.length / stagesPerPage)
   const clampedPage = Math.min(stagePage, Math.max(0, totalPages - 1))
 
-  // Memoized so mobileStageIndexMap dependency is stable
-  const visibleStagesMobile = useMemo(
+  // Memoized so visibleStageIndexMap dependency is stable
+  const visibleStages = useMemo(
     () =>
       stages.slice(
-        clampedPage * MOBILE_STAGES_PER_PAGE,
-        clampedPage * MOBILE_STAGES_PER_PAGE + MOBILE_STAGES_PER_PAGE,
+        clampedPage * stagesPerPage,
+        clampedPage * stagesPerPage + stagesPerPage,
       ),
-    [stages, clampedPage],
+    [stages, clampedPage, stagesPerPage],
   )
 
-  // O(1) stage → column index lookup for the mobile page
-  const mobileStageIndexMap = useMemo(
-    () => new Map(visibleStagesMobile.map((s, i) => [s, i])),
-    [visibleStagesMobile],
+  // O(1) stage → column index lookup for the current page
+  const visibleStageIndexMap = useMemo(
+    () => new Map(visibleStages.map((s, i) => [s, i])),
+    [visibleStages],
   )
 
   function handleTouchStart(e: React.TouchEvent) {
@@ -390,55 +407,48 @@ export default function ScheduleGrid({
     onTouchEnd: handleTouchEnd,
   }
 
-  if (isDesktop) {
-    return (
-      <div className="bg-pink p-3">
-        <StageGrid
-          {...sharedGridProps}
-          stages={stages}
-          stageIndexMap={stageIndexMap}
-        />
-      </div>
-    )
-  }
+  const pageFirst = clampedPage * stagesPerPage + 1
+  const pageLast = Math.min((clampedPage + 1) * stagesPerPage, stages.length)
 
-  // Mobile: paginated stage columns
+  // Paginated stage columns — page size adapts to how many fit at a readable width
   return (
     <div className="bg-pink p-3">
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mb-2">
-          <button
-            type="button"
-            data-testid="stage-page-prev"
-            onClick={() => setStagePage(p => Math.max(0, p - 1))}
-            disabled={clampedPage === 0}
-            aria-label="Previous stages"
-            className="w-8 h-8 bg-black border border-tealDark hover:bg-grayCustom disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark"
-          >
-            &#8592;
-          </button>
-          <span className="text-xs text-black font-display uppercase" aria-live="polite">
-            Stages {clampedPage * MOBILE_STAGES_PER_PAGE + 1}–
-            {Math.min((clampedPage + 1) * MOBILE_STAGES_PER_PAGE, stages.length)} of{' '}
-            {stages.length}
-          </span>
-          <button
-            type="button"
-            data-testid="stage-page-next"
-            onClick={() => setStagePage(p => Math.min(totalPages - 1, p + 1))}
-            disabled={clampedPage >= totalPages - 1}
-            aria-label="Next stages"
-            className="w-8 h-8 bg-black border border-tealDark hover:bg-grayCustom disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark"
-          >
-            &#8594;
-          </button>
-        </div>
-      )}
-      <StageGrid
-        {...sharedGridProps}
-        stages={visibleStagesMobile}
-        stageIndexMap={mobileStageIndexMap}
-      />
+      <div ref={containerRef}>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mb-2">
+            <button
+              type="button"
+              data-testid="stage-page-prev"
+              onClick={() => setStagePage(p => Math.max(0, p - 1))}
+              disabled={clampedPage === 0}
+              aria-label="Previous stages"
+              className="w-8 h-8 bg-black border border-tealDark hover:bg-grayCustom disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark"
+            >
+              &#8592;
+            </button>
+            <span className="text-xs text-black font-display uppercase" aria-live="polite">
+              {pageFirst === pageLast
+                ? `Stage ${pageFirst} of ${stages.length}`
+                : `Stages ${pageFirst}–${pageLast} of ${stages.length}`}
+            </span>
+            <button
+              type="button"
+              data-testid="stage-page-next"
+              onClick={() => setStagePage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={clampedPage >= totalPages - 1}
+              aria-label="Next stages"
+              className="w-8 h-8 bg-black border border-tealDark hover:bg-grayCustom disabled:opacity-30 disabled:cursor-not-allowed text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-tealDark"
+            >
+              &#8594;
+            </button>
+          </div>
+        )}
+        <StageGrid
+          {...sharedGridProps}
+          stages={visibleStages}
+          stageIndexMap={visibleStageIndexMap}
+        />
+      </div>
     </div>
   )
 }

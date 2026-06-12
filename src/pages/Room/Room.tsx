@@ -291,7 +291,7 @@ export default function Room() {
       )}
 
       {/* Header controls — matches schedule grid width */}
-      <div className="px-4 md:px-32 pt-6 pb-4">
+      <div className="px-4 sm:px-6 lg:px-12 xl:px-20 2xl:px-32 pt-6 pb-4">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-sm font-display uppercase tracking-widest text-gray-500 hover:text-white transition-colors mb-4"
@@ -303,7 +303,7 @@ export default function Room() {
         </Link>
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-1">
+            <div className="flex items-center flex-wrap gap-3 mb-1">
               <h1 className="text-white">
                 {room.display_name ?? 'Lolla Picks'}
               </h1>
@@ -328,7 +328,7 @@ export default function Room() {
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
               <p className="text-gray-400 text-sm">
                 {room.settings.vote_scope === 'per_day'
                   ? `${room.settings.votes_per_user} votes per day`
@@ -355,7 +355,7 @@ export default function Room() {
           </div>
 
           {/* View navigation — top right of header */}
-          <div className="flex items-center gap-4 sm:shrink-0">
+          <div className="flex items-center flex-wrap gap-3 sm:gap-4 sm:shrink-0">
             <div className="flex border border-[#333333] text-sm font-display uppercase">
               {([
                 ['picks', 'My Picks'],
@@ -365,7 +365,7 @@ export default function Room() {
                   key={value}
                   type="button"
                   onClick={() => setTab(value)}
-                  className={`px-5 py-2.5 transition-colors ${
+                  className={`px-3.5 sm:px-5 py-2.5 transition-colors ${
                     i > 0 ? 'border-l border-[#333333]' : ''
                   } ${
                     tab === value
@@ -381,7 +381,7 @@ export default function Room() {
               type="button"
               onClick={() => setTab('schedule')}
               aria-pressed={tab === 'schedule'}
-              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-display uppercase border transition-colors ${
+              className={`flex items-center gap-2 px-3.5 sm:px-5 py-2.5 text-sm font-display uppercase border transition-colors ${
                 tab === 'schedule'
                   ? 'bg-teal border-teal text-black'
                   : 'border-tealDark text-teal hover:bg-teal/10'
@@ -420,7 +420,7 @@ export default function Room() {
             onChange={setActiveDay}
           />
 
-          <div className="flex items-center gap-4 sm:shrink-0">
+          <div className="flex items-center flex-wrap gap-3 sm:gap-4 sm:shrink-0">
             {tab === 'schedule' ? (
               <>
                 {session?.is_admin && (
@@ -503,7 +503,7 @@ export default function Room() {
       </div>
 
       {/* Full-width schedule grid */}
-      <div className="px-32 pb-8">
+      <div className="px-4 sm:px-6 lg:px-12 xl:px-20 2xl:px-32 pb-8">
         <div
           id={activeDay ? `panel-${activeDay}` : undefined}
           role="tabpanel"

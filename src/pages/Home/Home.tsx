@@ -313,7 +313,7 @@ export default function Home() {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">Festival days</label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {ALL_DAYS.map(({ value, label }) => (
                 <button
                   key={value}
@@ -394,7 +394,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setAllowMultiVote(v => !v)}
-                className={`w-1/4 flex items-center justify-center py-2 border transition-colors ${
+                className={`min-w-[8rem] flex items-center justify-center px-3 py-2 border transition-colors ${
                   allowMultiVote
                     ? 'bg-tealgreen border-tealgreen text-black'
                     : 'bg-grayDark border-[#333333] text-gray-400'
