@@ -7,6 +7,10 @@ export interface RoomSettings {
   votes_per_user: number
   vote_scope: VoteScope
   allow_multi_vote?: boolean
+  /** Artist ids the admin has picked for the shared schedule */
+  schedule_picks?: string[]
+  /** When true (default), only the admin can edit the shared schedule */
+  schedule_admin_only?: boolean
 }
 
 export interface Room {

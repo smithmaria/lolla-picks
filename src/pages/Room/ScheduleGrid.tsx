@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ArtistBlock from './ArtistBlock'
+import {
+  SLOT_MINUTES,
+  ceilHour,
+  floorHour,
+  formatHour,
+  normalizeSlotMinutes,
+} from './scheduleTime'
 import type { Artist } from '../../types'
 
 interface Props {
@@ -11,6 +18,9 @@ interface Props {
   remainingBudget: number
   allowMultiVote: boolean
   editMode: boolean
+  scheduleMode?: boolean
+  scheduleSelectedIds?: Set<string>
+  onScheduleToggle?: (artistId: string) => void
 }
 
 interface StageGridProps {
@@ -24,6 +34,9 @@ interface StageGridProps {
   remainingBudget: number
   allowMultiVote: boolean
   editMode: boolean
+  scheduleMode?: boolean
+  scheduleSelectedIds?: Set<string>
+  onScheduleToggle?: (artistId: string) => void
   maxVotes: number
   maxUserVotes: number
   gridStart: number
@@ -34,43 +47,6 @@ interface StageGridProps {
   onTouchEnd: (e: React.TouchEvent) => void
 }
 
-/** Parse "HH:MM" into total minutes since midnight */
-function toMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number)
-  return (h ?? 0) * 60 + (m ?? 0)
-}
-
-/**
- * Return [startMinutes, endMinutes] normalized so end > start.
- * Handles artists that span midnight by adding 24h to the end.
- */
-function normalizeSlotMinutes(start: string, end: string): [number, number] {
-  const s = toMinutes(start)
-  let e = toMinutes(end)
-  if (e <= s) e += 24 * 60
-  return [s, e]
-}
-
-/** Round down to previous hour boundary (in minutes) */
-function floorHour(minutes: number): number {
-  return Math.floor(minutes / 60) * 60
-}
-
-/** Round up to next hour boundary (in minutes) */
-function ceilHour(minutes: number): number {
-  return Math.ceil(minutes / 60) * 60
-}
-
-/** Format minutes-since-midnight as "12 PM", "1 PM", etc. */
-function formatHour(minutes: number): string {
-  const normalized = minutes % (24 * 60)
-  const h = Math.floor(normalized / 60)
-  if (h === 0) return '12 AM'
-  if (h === 12) return '12 PM'
-  return h < 12 ? `${h} AM` : `${h - 12} PM`
-}
-
-const SLOT_MINUTES = 15
 const MOBILE_STAGES_PER_PAGE = 3
 
 /** Subscribe to a CSS media query, returns true when the query matches. */
@@ -100,6 +76,9 @@ function StageGrid({
   remainingBudget,
   allowMultiVote,
   editMode,
+  scheduleMode,
+  scheduleSelectedIds,
+  onScheduleToggle,
   maxVotes,
   maxUserVotes,
   gridStart,
@@ -239,6 +218,11 @@ function StageGrid({
                     remainingBudget={remainingBudget}
                     allowMultiVote={allowMultiVote}
                     editMode={editMode}
+                    scheduleMode={scheduleMode}
+                    scheduleSelected={scheduleSelectedIds?.has(artist.id) ?? false}
+                    onScheduleToggle={
+                      onScheduleToggle ? () => onScheduleToggle(artist.id) : undefined
+                    }
                     compact
                   />
                 </div>
@@ -259,6 +243,9 @@ export default function ScheduleGrid({
   remainingBudget,
   allowMultiVote,
   editMode,
+  scheduleMode,
+  scheduleSelectedIds,
+  onScheduleToggle,
 }: Props) {
   const [stagePage, setStagePage] = useState(0)
   const touchStartX = useRef<number | null>(null)
@@ -384,6 +371,9 @@ export default function ScheduleGrid({
     remainingBudget,
     allowMultiVote,
     editMode,
+    scheduleMode,
+    scheduleSelectedIds,
+    onScheduleToggle,
     maxVotes,
     maxUserVotes,
     gridStart,

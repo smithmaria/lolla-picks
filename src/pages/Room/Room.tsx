@@ -6,6 +6,7 @@ import { useVotes } from '../../hooks/useVotes'
 import AdminPanel from './AdminPanel'
 import DayTabs from './DayTabs'
 import NameEntry from './NameEntry'
+import ScheduleExport from './ScheduleExport'
 import ScheduleGrid from './ScheduleGrid'
 import VoteBudget from './VoteBudget'
 import lineup from '../../data/lineup-2026.json'
@@ -16,6 +17,8 @@ const allArtists = lineup as Artist[]
 // Per-user vote map: userId -> artistId -> voteCount
 type UserVoteMap = Record<string, Record<string, number>>
 
+type Tab = 'picks' | 'votes' | 'schedule'
+
 export default function Room() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
@@ -25,7 +28,9 @@ export default function Room() {
   const [allUserVotes, setAllUserVotes] = useState<UserVoteMap>({})
   const [adminOpen, setAdminOpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [editMode, setEditMode] = useState(true)
+  const [tab, setTab] = useState<Tab>('picks')
+  const [schedulePicks, setSchedulePicks] = useState<string[]>([])
+  const [scheduleAdminOnly, setScheduleAdminOnly] = useState(true)
 
   function copyLink() {
     void navigator.clipboard.writeText(window.location.href).then(() => {
@@ -64,6 +69,46 @@ export default function Room() {
       setActiveDay(room.settings.days[0] ?? null)
     }
   }, [room, activeDay])
+
+  // Sync shared schedule picks from room settings (kept live via room subscription)
+  useEffect(() => {
+    setSchedulePicks(room?.settings.schedule_picks ?? [])
+  }, [room?.settings.schedule_picks])
+
+  // Sync admin-only edit lock from room settings (defaults to locked)
+  useEffect(() => {
+    setScheduleAdminOnly(room?.settings.schedule_admin_only ?? true)
+  }, [room?.settings.schedule_admin_only])
+
+  const toggleScheduleAdminOnly = useCallback(async () => {
+    if (!room) return
+    const prev = scheduleAdminOnly
+    const next = !prev
+    setScheduleAdminOnly(next)
+    const { error } = await supabase
+      .from('rooms')
+      .update({ settings: { ...room.settings, schedule_admin_only: next } })
+      .eq('id', room.id)
+    if (error) setScheduleAdminOnly(prev)
+  }, [room, scheduleAdminOnly])
+
+  // Toggle an artist on/off the shared schedule, persisted in room settings
+  const toggleSchedulePick = useCallback(
+    async (artistId: string) => {
+      if (!room) return
+      const prev = schedulePicks
+      const next = prev.includes(artistId)
+        ? prev.filter(id => id !== artistId)
+        : [...prev, artistId]
+      setSchedulePicks(next)
+      const { error } = await supabase
+        .from('rooms')
+        .update({ settings: { ...room.settings, schedule_picks: next } })
+        .eq('id', room.id)
+      if (error) setSchedulePicks(prev)
+    },
+    [room, schedulePicks],
+  )
 
   // Fetch all votes for this room + subscribe to real-time changes
   useEffect(() => {
@@ -177,6 +222,8 @@ export default function Room() {
     ? allArtists.filter(a => a.day === activeDay)
     : []
 
+  const schedulePickIds = new Set(schedulePicks)
+
   const remaining =
     activeDay !== null
       ? votesRemaining(room.settings.vote_scope === 'per_day' ? activeDay : undefined)
@@ -199,43 +246,86 @@ export default function Room() {
         >
           ← Home
         </Link>
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-white">
-              {room.display_name ?? 'Lolla Picks'}
-            </h1>
-            <button
-              type="button"
-              onClick={copyLink}
-              className="text-xs font-display uppercase px-3 py-1 border border-[#333333] text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
-            >
-              {copied ? 'Copied!' : 'Copy link'}
-            </button>
-            {session?.is_admin && (
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-white">
+                {room.display_name ?? 'Lolla Picks'}
+              </h1>
               <button
                 type="button"
-                onClick={() => setAdminOpen(true)}
-                aria-label="Open admin panel"
-                className="text-gray-500 hover:text-yellow transition-colors"
+                onClick={copyLink}
+                className="text-xs font-display uppercase px-3 py-1 border border-[#333333] text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                  <circle cx="12" cy="12" r="3" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
+                {copied ? 'Copied!' : 'Copy link'}
               </button>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            <p className="text-gray-400 text-sm">
-              {room.settings.vote_scope === 'per_day'
-                ? `${room.settings.votes_per_user} votes per day`
-                : `${room.settings.votes_per_user} votes total`}
-            </p>
-            {session && (
-              <p className="text-sm text-gray-500">
-                voting as <span className="text-white font-medium">{session.display_name}</span>
+              {session?.is_admin && (
+                <button
+                  type="button"
+                  onClick={() => setAdminOpen(true)}
+                  aria-label="Open admin panel"
+                  className="text-gray-500 hover:text-yellow transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                    <circle cx="12" cy="12" r="3" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              <p className="text-gray-400 text-sm">
+                {room.settings.vote_scope === 'per_day'
+                  ? `${room.settings.votes_per_user} votes per day`
+                  : `${room.settings.votes_per_user} votes total`}
               </p>
-            )}
+              {session && (
+                <p className="text-sm text-gray-500">
+                  voting as <span className="text-white font-medium">{session.display_name}</span>
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* View navigation — top right of header */}
+          <div className="flex items-center gap-4 sm:shrink-0">
+            <div className="flex border border-[#333333] text-sm font-display uppercase">
+              {([
+                ['picks', 'My Picks'],
+                ['votes', 'Room Votes'],
+              ] as [Tab, string][]).map(([value, label], i) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setTab(value)}
+                  className={`px-5 py-2.5 transition-colors ${
+                    i > 0 ? 'border-l border-[#333333]' : ''
+                  } ${
+                    tab === value
+                      ? 'bg-yellow text-black'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setTab('schedule')}
+              aria-pressed={tab === 'schedule'}
+              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-display uppercase border transition-colors ${
+                tab === 'schedule'
+                  ? 'bg-teal border-teal text-black'
+                  : 'border-tealDark text-teal hover:bg-teal/10'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <rect x="3" y="5" width="18" height="16" rx="0" />
+                <path strokeLinecap="round" d="M3 10h18M8 3v4M16 3v4" />
+              </svg>
+              Build Schedule
+            </button>
           </div>
         </div>
 
@@ -255,44 +345,76 @@ export default function Room() {
           />
 
           <div className="flex items-center gap-4 sm:shrink-0">
-            <div className="flex border border-[#333333] text-sm font-display uppercase">
-              <button
-                type="button"
-                onClick={() => setEditMode(true)}
-                className={`px-5 py-2.5 transition-colors ${
-                  editMode
-                    ? 'bg-yellow text-black'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                My Picks
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditMode(false)}
-                className={`px-5 py-2.5 transition-colors border-l border-[#333333] ${
-                  !editMode
-                    ? 'bg-yellow text-black'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Room Votes
-              </button>
-            </div>
-            {session && (
-              <VoteBudget
-                remaining={remaining}
-                total={room.settings.votes_per_user}
-                scope={room.settings.vote_scope}
-                activeDay={
-                  room.settings.vote_scope === 'per_day' && activeDay
-                    ? activeDay
-                    : undefined
-                }
-              />
+            {tab === 'schedule' ? (
+              <>
+                {session?.is_admin && (
+                  <button
+                    type="button"
+                    onClick={toggleScheduleAdminOnly}
+                    aria-pressed={scheduleAdminOnly}
+                    aria-label={
+                      scheduleAdminOnly
+                        ? 'Only admin can edit — click to let everyone edit'
+                        : 'Everyone can edit — click to lock editing to admin'
+                    }
+                    title={
+                      scheduleAdminOnly
+                        ? 'Only admin can edit — click to let everyone edit'
+                        : 'Everyone can edit — click to lock editing to admin'
+                    }
+                    className={`flex items-center gap-2 px-4 py-2.5 border text-sm font-display uppercase transition-colors ${
+                      scheduleAdminOnly
+                        ? 'border-[#333333] text-gray-400 hover:text-white hover:border-gray-500'
+                        : 'border-tealgreen text-tealgreen hover:opacity-80'
+                    }`}
+                  >
+                    {scheduleAdminOnly ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <rect x="5" y="11" width="14" height="10" />
+                        <path strokeLinecap="round" d="M8 11V7a4 4 0 0 1 8 0v4" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <rect x="5" y="11" width="14" height="10" />
+                        <path strokeLinecap="round" d="M8 11V7a4 4 0 0 1 7.5-2" />
+                      </svg>
+                    )}
+                    {scheduleAdminOnly ? 'Admin only' : 'Everyone edits'}
+                  </button>
+                )}
+                <ScheduleExport
+                  artists={allArtists}
+                  days={room.settings.days}
+                  selectedIds={schedulePickIds}
+                  roomName={room.display_name ?? 'Lolla Picks'}
+                />
+              </>
+            ) : (
+              session && (
+                <VoteBudget
+                  remaining={remaining}
+                  total={room.settings.votes_per_user}
+                  scope={room.settings.vote_scope}
+                  activeDay={
+                    room.settings.vote_scope === 'per_day' && activeDay
+                      ? activeDay
+                      : undefined
+                  }
+                />
+              )
             )}
           </div>
         </div>
+
+        {tab === 'schedule' && scheduleAdminOnly && !session?.is_admin && (
+          <div
+            role="status"
+            className="bg-teal/10 border border-tealDark text-teal px-4 py-3 mb-4 text-sm"
+          >
+            The admin has schedule editing locked, so only they can pick artists right
+            now. You can still browse it and export images.
+          </div>
+        )}
 
         {votesError && (
           <div
@@ -321,7 +443,14 @@ export default function Room() {
             locked={!session}
             remainingBudget={remaining}
             allowMultiVote={room.settings.allow_multi_vote ?? false}
-            editMode={editMode}
+            editMode={tab === 'picks'}
+            scheduleMode={tab === 'schedule'}
+            scheduleSelectedIds={schedulePickIds}
+            onScheduleToggle={
+              tab === 'schedule' && session && (session.is_admin || !scheduleAdminOnly)
+                ? toggleSchedulePick
+                : undefined
+            }
           />
         </div>
       </div>

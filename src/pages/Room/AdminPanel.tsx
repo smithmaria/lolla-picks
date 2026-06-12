@@ -56,6 +56,7 @@ export default function AdminPanel({ room, onClose, onDeleted }: Props) {
       .from('rooms')
       .update({
         settings: {
+          ...room.settings,
           days,
           votes_per_user: votesPerUser,
           vote_scope: voteScope,

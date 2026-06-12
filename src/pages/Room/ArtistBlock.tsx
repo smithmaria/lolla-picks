@@ -30,6 +30,9 @@ interface Props {
   remainingBudget: number
   allowMultiVote: boolean
   editMode: boolean
+  scheduleMode?: boolean
+  scheduleSelected?: boolean
+  onScheduleToggle?: () => void
   compact?: boolean
 }
 
@@ -44,18 +47,26 @@ export default function ArtistBlock({
   remainingBudget,
   allowMultiVote,
   editMode,
+  scheduleMode = false,
+  scheduleSelected = false,
+  onScheduleToggle,
   compact = false,
 }: Props) {
   const canIncrement = !locked && remainingBudget > 0
   const canDecrement = !locked && voteCount > 0
 
-  const isToggleMode = editMode && !allowMultiVote && !locked
+  const isToggleMode = !scheduleMode && editMode && !allowMultiVote && !locked
+  const isScheduleToggle = scheduleMode && !!onScheduleToggle
 
-  const grayedOut = !editMode && aggregateVotes === 0
+  const grayedOut = scheduleMode
+    ? !scheduleSelected
+    : !editMode && aggregateVotes === 0
 
   let backgroundColor: string | undefined
   if (!grayedOut) {
-    if (!editMode && aggregateVotes > 0 && maxVotes > 0) {
+    if (scheduleMode) {
+      backgroundColor = YELLOW
+    } else if (!editMode && aggregateVotes > 0 && maxVotes > 0) {
       backgroundColor = voteColor(aggregateVotes / maxVotes)
     } else if (editMode && !allowMultiVote && voteCount > 0) {
       backgroundColor = SELECTED_COLOR
@@ -67,8 +78,14 @@ export default function ArtistBlock({
   }
 
   function handleToggle() {
+    if (isScheduleToggle) {
+      onScheduleToggle?.()
+      return
+    }
     onVote(voteCount > 0 ? -1 : 1)
   }
+
+  const clickable = isToggleMode || isScheduleToggle
 
   const textColor = 'text-black'
 
@@ -78,13 +95,13 @@ export default function ArtistBlock({
     <div
       className={`border border-tealDark relative overflow-hidden h-full transition-colors ${
         compactMultiVote ? 'flex flex-row p-1.5 gap-2' : compact ? 'flex flex-col p-1.5 gap-1' : 'flex flex-col p-4 gap-2'
-      } ${grayedOut ? 'bg-grayLight' : ''} ${isToggleMode ? 'cursor-pointer select-none' : ''}`}
+      } ${grayedOut ? 'bg-grayLight' : ''} ${clickable ? 'cursor-pointer select-none' : ''}`}
       style={backgroundColor ? { backgroundColor } : undefined}
-      onClick={isToggleMode ? handleToggle : undefined}
-      role={isToggleMode ? 'button' : undefined}
-      tabIndex={isToggleMode ? 0 : undefined}
+      onClick={clickable ? handleToggle : undefined}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
       onKeyDown={
-        isToggleMode
+        clickable
           ? e => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
@@ -93,11 +110,15 @@ export default function ArtistBlock({
             }
           : undefined
       }
-      aria-pressed={isToggleMode ? voteCount > 0 : undefined}
+      aria-pressed={
+        isScheduleToggle ? scheduleSelected : isToggleMode ? voteCount > 0 : undefined
+      }
       aria-label={
-        isToggleMode
-          ? `${voteCount > 0 ? 'Remove vote from' : 'Vote for'} ${artist.name}`
-          : undefined
+        isScheduleToggle
+          ? `${scheduleSelected ? 'Remove' : 'Add'} ${artist.name} ${scheduleSelected ? 'from' : 'to'} schedule`
+          : isToggleMode
+            ? `${voteCount > 0 ? 'Remove vote from' : 'Vote for'} ${artist.name}`
+            : undefined
       }
     >
       {/* Compact multi-vote: left text column + right vertical controls */}
@@ -177,7 +198,7 @@ export default function ArtistBlock({
             </div>
 
             {/* View mode: aggregate count */}
-            {!editMode && aggregateVotes > 0 && (
+            {!scheduleMode && !editMode && aggregateVotes > 0 && (
               <p
                 role="status"
                 aria-label={`${aggregateVotes} vote${aggregateVotes !== 1 ? 's' : ''} for ${artist.name}`}
