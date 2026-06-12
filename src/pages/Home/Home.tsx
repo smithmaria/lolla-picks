@@ -17,7 +17,16 @@ const ALL_DAYS: { value: Day; label: string }[] = [
   { value: 'sunday', label: 'Sunday' },
 ]
 
-const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
+const JOIN_CODE_RE = /^[A-Z0-9]{6}$/
+
+// Unambiguous chars (no 0/O, 1/I/L)
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+
+function generateJoinCode(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(6)))
+    .map(b => CODE_CHARS[b % CODE_CHARS.length])
+    .join('')
+}
 
 export default function Home() {
   const navigate = useNavigate()
@@ -71,15 +80,27 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function handleJoin(e: React.FormEvent) {
+  async function handleJoin(e: React.FormEvent) {
     e.preventDefault()
     setJoinError(null)
-    const match = joinInput.match(UUID_RE)
-    if (!match) {
-      setJoinError('Paste a valid room link or room ID.')
+
+    const trimmed = joinInput.trim().toUpperCase()
+
+    if (!JOIN_CODE_RE.test(trimmed)) {
+      setJoinError('Enter the 6-character room code.')
       return
     }
-    navigate(`/room/${match[0]}`)
+
+    const { data, error } = await supabase
+      .from('rooms')
+      .select('id')
+      .eq('join_code', trimmed)
+      .single()
+    if (error || !data) {
+      setJoinError('Room not found. Check the code and try again.')
+      return
+    }
+    navigate(`/room/${data.id}`)
   }
 
   function toggleDay(day: Day) {
@@ -112,6 +133,7 @@ export default function Home() {
       .from('rooms')
       .insert({
         display_name: roomDisplayName.trim() || null,
+        join_code: generateJoinCode(),
         settings: {
           days: selectedDays,
           votes_per_user: votesPerUser,
@@ -209,13 +231,13 @@ export default function Home() {
           <form onSubmit={handleJoin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Room link or ID
+                Room code
               </label>
               <input
                 type="text"
                 value={joinInput}
                 onChange={e => setJoinInput(e.target.value)}
-                placeholder="Paste link or room ID"
+                placeholder="e.g. PUNK4Z"
                 className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />
             </div>

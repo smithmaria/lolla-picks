@@ -16,6 +16,7 @@ export interface RoomSettings {
 export interface Room {
   id: string
   display_name: string | null
+  join_code: string | null
   settings: RoomSettings
   status: RoomStatus
   created_at: string

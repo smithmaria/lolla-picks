@@ -23,6 +23,7 @@ const DAY_ACTIVE: Record<Day, string> = {
 }
 
 export default function AdminPanel({ room, onClose, onDeleted }: Props) {
+  const [displayName, setDisplayName] = useState(room.display_name ?? '')
   const [days, setDays] = useState<Day[]>(room.settings.days)
   const [votesPerUser, setVotesPerUser] = useState(room.settings.votes_per_user)
   const [voteScope, setVoteScope] = useState<VoteScope>(room.settings.vote_scope)
@@ -31,6 +32,13 @@ export default function AdminPanel({ room, onClose, onDeleted }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [codeCopied, setCodeCopied] = useState(false)
+
+  function copyCode() {
+    void navigator.clipboard.writeText(room.join_code!)
+    setCodeCopied(true)
+    setTimeout(() => setCodeCopied(false), 2000)
+  }
 
   useEffect(() => {
     setDays(room.settings.days)
@@ -55,6 +63,7 @@ export default function AdminPanel({ room, onClose, onDeleted }: Props) {
     const { error: err } = await supabase
       .from('rooms')
       .update({
+        display_name: displayName.trim() || null,
         settings: {
           ...room.settings,
           days,
@@ -140,7 +149,35 @@ export default function AdminPanel({ room, onClose, onDeleted }: Props) {
                 </button>
               </div>
 
+              {room.join_code && (
+                <div className="bg-grayDark border border-[#333333] px-4 py-3 mb-5 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-0.5">Room code</p>
+                    <p className="text-2xl font-display tracking-widest text-yellow">{room.join_code}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={copyCode}
+                    className="text-xs text-gray-400 hover:text-white border border-[#333333] px-3 py-1.5 transition-colors"
+                  >
+                    {codeCopied ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+              )}
+
               <div className="space-y-5">
+                {/* Room name */}
+                <div>
+                  <p className="text-sm font-medium text-gray-400 mb-2">Room name</p>
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={e => setDisplayName(e.target.value)}
+                    placeholder="e.g. Weekend Crew"
+                    className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
+                  />
+                </div>
+
                 {/* Active days */}
                 <div>
                   <p className="text-sm font-medium text-gray-400 mb-2">Active days</p>
