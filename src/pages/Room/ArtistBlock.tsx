@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Artist } from '../../types'
 
 function to12Hour(time: string): string {
@@ -23,6 +24,7 @@ interface Props {
   artist: Artist
   voteCount: number       // this user's votes
   aggregateVotes: number  // all users' votes combined
+  voters: string[]        // display names of users who voted for this artist
   maxVotes: number        // highest aggregate vote count on any artist in the room
   maxUserVotes: number    // highest personal vote count on any single artist
   onVote: (delta: 1 | -1) => void
@@ -40,6 +42,7 @@ export default function ArtistBlock({
   artist,
   voteCount,
   aggregateVotes,
+  voters,
   maxVotes,
   maxUserVotes,
   onVote,
@@ -90,10 +93,14 @@ export default function ArtistBlock({
   const textColor = 'text-black'
 
   const compactMultiVote = compact && editMode && !locked && allowMultiVote
+  const showTooltip = !editMode && !scheduleMode && voters.length > 0
+  const [hovered, setHovered] = useState(false)
 
   return (
     <div
-      className={`border border-tealDark relative overflow-hidden h-full transition-colors ${
+      onMouseEnter={showTooltip ? () => setHovered(true) : undefined}
+      onMouseLeave={showTooltip ? () => setHovered(false) : undefined}
+      className={`border border-tealDark relative overflow-visible h-full transition-colors ${
         compactMultiVote ? 'flex flex-row p-1.5 gap-2' : compact ? 'flex flex-col p-1.5 gap-1' : 'flex flex-col p-4 gap-2'
       } ${grayedOut ? 'bg-grayLight' : ''} ${clickable ? 'cursor-pointer select-none' : ''}`}
       style={backgroundColor ? { backgroundColor } : undefined}
@@ -121,6 +128,19 @@ export default function ArtistBlock({
             : undefined
       }
     >
+      {/* Voter tooltip — shown on hover in room votes mode */}
+      {showTooltip && hovered && (
+        <div
+          role="tooltip"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none"
+        >
+          <div className="bg-black border border-[#333333] px-2.5 py-1.5 text-xs text-white whitespace-nowrap shadow-lg">
+            {voters.join(', ')}
+          </div>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#333333]" />
+        </div>
+      )}
+
       {/* Compact multi-vote: left text column + right vertical controls */}
       {compactMultiVote && (
         <>

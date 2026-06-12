@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useRoom } from '../../hooks/useRoom'
+import { useRoomMembers } from '../../hooks/useRoomMembers'
 import { useVotes } from '../../hooks/useVotes'
 import AdminPanel from './AdminPanel'
 import DayTabs from './DayTabs'
+import MembersPanel from './MembersPanel'
 import NameEntry from './NameEntry'
 import ScheduleExport from './ScheduleExport'
 import ScheduleGrid from './ScheduleGrid'
@@ -26,7 +28,9 @@ export default function Room() {
   const [session, setSession] = useState<LocalSession | null>(null)
   const [activeDay, setActiveDay] = useState<Day | null>(null)
   const [allUserVotes, setAllUserVotes] = useState<UserVoteMap>({})
+  const { members, loaded: membersLoaded, removeMember } = useRoomMembers(roomId)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [membersOpen, setMembersOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [tab, setTab] = useState<Tab>('picks')
   const [schedulePicks, setSchedulePicks] = useState<string[]>([])
@@ -110,6 +114,39 @@ export default function Room() {
     [room, schedulePicks],
   )
 
+  // Display names for all room users, kept live by the members subscription
+  const userNames = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const m of members) map[m.id] = m.display_name
+    return map
+  }, [members])
+
+  // If the admin removes the current user, drop their session back to name entry
+  useEffect(() => {
+    if (!roomId || !session || !membersLoaded) return
+    if (!members.some(m => m.id === session.user_id)) {
+      localStorage.removeItem(`lolla-user-${roomId}`)
+      setSession(null)
+    }
+  }, [roomId, session, members, membersLoaded])
+
+  // When a member is removed, clear their votes from local state
+  useEffect(() => {
+    if (!membersLoaded) return
+    const memberIds = new Set(members.map(m => m.id))
+    setAllUserVotes(prev => {
+      const next = { ...prev }
+      let changed = false
+      for (const uid of Object.keys(next)) {
+        if (!memberIds.has(uid)) {
+          delete next[uid]
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [members, membersLoaded])
+
   // Fetch all votes for this room + subscribe to real-time changes
   useEffect(() => {
     if (!roomId) return
@@ -190,6 +227,21 @@ export default function Room() {
     return aggregate
   }, [allUserVotes, votesByArtist, session?.user_id])
 
+  // Per-artist list of voter display names (for room votes tooltip)
+  const votersByArtist = useMemo(() => {
+    const map: Record<string, string[]> = {}
+    for (const [uid, votes] of Object.entries(allUserVotes)) {
+      const name = userNames[uid] ?? 'Someone'
+      for (const [artistId, count] of Object.entries(votes)) {
+        if (count > 0) {
+          if (!map[artistId]) map[artistId] = []
+          map[artistId].push(name)
+        }
+      }
+    }
+    return map
+  }, [allUserVotes, userNames])
+
   const handleVote = useCallback(
     (artistId: string, delta: 1 | -1) => {
       if (session) void castVote(artistId, delta)
@@ -242,9 +294,12 @@ export default function Room() {
       <div className="px-4 md:px-32 pt-6 pb-4">
         <Link
           to="/"
-          className="inline-flex items-center gap-1 text-xs font-display uppercase text-gray-500 hover:text-gray-300 transition-colors mb-4"
+          className="inline-flex items-center gap-2 text-sm font-display uppercase px-4 py-1.5 border border-[#333333] text-gray-400 hover:text-white hover:border-gray-500 transition-colors mb-4"
         >
-          ← Home
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Home
         </Link>
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -255,7 +310,7 @@ export default function Room() {
               <button
                 type="button"
                 onClick={copyLink}
-                className="text-xs font-display uppercase px-3 py-1 border border-[#333333] text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+                className="text-sm font-display uppercase px-4 py-1.5 border border-[#333333] text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
               >
                 {copied ? 'Copied!' : 'Copy link'}
               </button>
@@ -284,6 +339,18 @@ export default function Room() {
                   voting as <span className="text-white font-medium">{session.display_name}</span>
                 </p>
               )}
+              <button
+                type="button"
+                onClick={() => setMembersOpen(true)}
+                aria-label="View room members"
+                className="inline-flex items-center gap-1.5 text-xs font-display uppercase text-gray-400 hover:text-white transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                  <circle cx="9" cy="7" r="4" />
+                </svg>
+                {members.length}
+              </button>
             </div>
           </div>
 
@@ -334,6 +401,15 @@ export default function Room() {
             room={room}
             onClose={() => setAdminOpen(false)}
             onDeleted={() => navigate('/')}
+          />
+        )}
+
+        {membersOpen && (
+          <MembersPanel
+            members={members}
+            currentUserId={session?.user_id}
+            onRemove={session?.is_admin ? removeMember : undefined}
+            onClose={() => setMembersOpen(false)}
           />
         )}
 
@@ -443,6 +519,7 @@ export default function Room() {
             locked={!session}
             remainingBudget={remaining}
             allowMultiVote={room.settings.allow_multi_vote ?? false}
+            votersByArtist={votersByArtist}
             editMode={tab === 'picks'}
             scheduleMode={tab === 'schedule'}
             scheduleSelectedIds={schedulePickIds}

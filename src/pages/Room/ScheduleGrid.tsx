@@ -13,6 +13,7 @@ interface Props {
   artists: Artist[]
   votesByArtist: Record<string, number>
   allRoomVotes: Record<string, number>
+  votersByArtist: Record<string, string[]>
   onVote: (artistId: string, delta: 1 | -1) => void
   locked: boolean
   remainingBudget: number
@@ -29,6 +30,7 @@ interface StageGridProps {
   stageIndexMap: Map<string, number>
   votesByArtist: Record<string, number>
   allRoomVotes: Record<string, number>
+  votersByArtist: Record<string, string[]>
   onVote: (artistId: string, delta: 1 | -1) => void
   locked: boolean
   remainingBudget: number
@@ -71,6 +73,7 @@ function StageGrid({
   stageIndexMap,
   votesByArtist,
   allRoomVotes,
+  votersByArtist,
   onVote,
   locked,
   remainingBudget,
@@ -211,6 +214,7 @@ function StageGrid({
                     artist={artist}
                     voteCount={userVotes}
                     aggregateVotes={aggregateVotes}
+                    voters={votersByArtist[artist.id] ?? []}
                     maxVotes={maxVotes}
                     maxUserVotes={maxUserVotes}
                     onVote={delta => onVote(artist.id, delta)}
@@ -238,6 +242,7 @@ export default function ScheduleGrid({
   artists,
   votesByArtist,
   allRoomVotes,
+  votersByArtist,
   onVote,
   locked,
   remainingBudget,
@@ -366,6 +371,7 @@ export default function ScheduleGrid({
     artists,
     votesByArtist,
     allRoomVotes,
+    votersByArtist,
     onVote,
     locked,
     remainingBudget,
