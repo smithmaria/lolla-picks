@@ -192,8 +192,11 @@ export default function ScheduleExport({ artists, days, selectedIds, roomName }:
 
       // On iOS, <a download> goes to Files. Use the Web Share API with image
       // files instead so the share sheet offers "Save Image" → Photos.
+      // Exclude macOS — canShare returns true there too but triggers the system
+      // share sheet rather than a direct save, which is worse UX.
+      const isMobile = /Android|iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
       const testFile = new File([], 'test.png', { type: 'image/png' })
-      const canShareFiles = !!navigator.canShare?.({ files: [testFile] })
+      const canShareFiles = isMobile && !!navigator.canShare?.({ files: [testFile] })
 
       if (canShareFiles) {
         const files = await Promise.all(
