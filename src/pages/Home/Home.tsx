@@ -104,9 +104,11 @@ export default function Home() {
   }
 
   function toggleDay(day: Day) {
-    setSelectedDays(prev =>
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-    )
+    const order = ALL_DAYS.map(d => d.value)
+    setSelectedDays(prev => {
+      const next = prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+      return next.sort((a, b) => order.indexOf(a) - order.indexOf(b))
+    })
   }
 
   async function handleSubmit(e: React.FormEvent) {

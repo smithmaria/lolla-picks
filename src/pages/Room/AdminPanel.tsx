@@ -48,9 +48,11 @@ export default function AdminPanel({ room, onClose, onDeleted }: Props) {
   }, [room.settings.days, room.settings.votes_per_user, room.settings.vote_scope, room.settings.allow_multi_vote])
 
   function toggleDay(day: Day) {
-    setDays(prev =>
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day],
-    )
+    const order = ALL_DAYS.map(d => d.value)
+    setDays(prev => {
+      const next = prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+      return next.sort((a, b) => order.indexOf(a) - order.indexOf(b))
+    })
   }
 
   async function handleSave() {
