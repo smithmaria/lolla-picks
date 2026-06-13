@@ -9,6 +9,7 @@ interface UseVotesResult {
   votesByArtist: VotesByArtist
   castVote: (artistId: string, delta: 1 | -1) => void
   votesRemaining: (day?: Day) => number
+  isOverLimit: (day?: Day) => boolean
   votesError: string | null
 }
 
@@ -99,16 +100,15 @@ export function useVotes(
     [roomId, userId],
   )
 
-  const votesRemaining = useCallback(
+  const votesUsed = useCallback(
     (day?: Day): number => {
-      const { votes_per_user, vote_scope } = settings
+      const { vote_scope } = settings
 
       if (vote_scope === 'overall') {
-        const used = Object.values(votesByArtist).reduce((sum, n) => sum + n, 0)
-        return Math.max(0, votes_per_user - used)
+        return Object.values(votesByArtist).reduce((sum, n) => sum + n, 0)
       }
 
-      if (!day) return votes_per_user
+      if (!day) return 0
 
       const artistIdsForDay = new Set(
         (lineup as Array<{ id: string; day: string }>)
@@ -116,14 +116,22 @@ export function useVotes(
           .map(a => a.id),
       )
 
-      const used = Object.entries(votesByArtist)
+      return Object.entries(votesByArtist)
         .filter(([artistId]) => artistIdsForDay.has(artistId))
         .reduce((sum, [, count]) => sum + count, 0)
-
-      return Math.max(0, votes_per_user - used)
     },
     [settings, votesByArtist],
   )
 
-  return { votesByArtist, castVote, votesRemaining, votesError }
+  const votesRemaining = useCallback(
+    (day?: Day): number => Math.max(0, settings.votes_per_user - votesUsed(day)),
+    [settings, votesUsed],
+  )
+
+  const isOverLimit = useCallback(
+    (day?: Day): boolean => votesUsed(day) > settings.votes_per_user,
+    [settings, votesUsed],
+  )
+
+  return { votesByArtist, castVote, votesRemaining, isOverLimit, votesError }
 }

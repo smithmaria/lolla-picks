@@ -207,7 +207,7 @@ export default function Room() {
     }
   }, [roomId])
 
-  const { votesByArtist, castVote, votesRemaining, votesError } = useVotes(
+  const { votesByArtist, castVote, votesRemaining, isOverLimit, votesError } = useVotes(
     roomId ?? '',
     session?.user_id ?? '',
     room?.settings ?? fallbackSettings,
@@ -293,6 +293,10 @@ export default function Room() {
     activeDay !== null
       ? votesRemaining(room.settings.vote_scope === 'per_day' ? activeDay : undefined)
       : room.settings.votes_per_user
+
+  const overLimit = isOverLimit(
+    room.settings.vote_scope === 'per_day' && activeDay ? activeDay : undefined,
+  )
 
   return (
     <div className="min-h-screen bg-black">
@@ -516,6 +520,15 @@ export default function Room() {
           >
             The admin has schedule editing locked, so only they can pick artists right
             now. You can still browse it and export images.
+          </div>
+        )}
+
+        {tab !== 'schedule' && overLimit && (
+          <div
+            role="status"
+            className="bg-teal/10 border border-tealDark text-teal px-4 py-3 mb-4 text-sm"
+          >
+            The vote limit was lowered — remove some votes to get back under the new limit.
           </div>
         )}
 
