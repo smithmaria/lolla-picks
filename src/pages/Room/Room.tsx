@@ -415,6 +415,15 @@ export default function Room() {
             members={members}
             currentUserId={session?.user_id}
             onRemove={session?.is_admin ? removeMember : undefined}
+            onLeave={session && !session.is_admin ? async () => {
+              await removeMember(session.user_id)
+              localStorage.removeItem(`lolla-user-${roomId}`)
+              navigate('/')
+            } : undefined}
+            onLogout={session ? () => {
+              localStorage.removeItem(`lolla-user-${roomId}`)
+              navigate('/')
+            } : undefined}
             onClose={() => setMembersOpen(false)}
           />
         )}

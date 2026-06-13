@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { RoomMember } from '../../hooks/useRoomMembers'
 import MembersList from './MembersList'
 
@@ -5,10 +6,14 @@ interface Props {
   members: RoomMember[]
   currentUserId?: string
   onRemove?: (userId: string) => Promise<boolean>
+  onLeave?: () => void
+  onLogout?: () => void
   onClose: () => void
 }
 
-export default function MembersPanel({ members, currentUserId, onRemove, onClose }: Props) {
+export default function MembersPanel({ members, currentUserId, onRemove, onLeave, onLogout, onClose }: Props) {
+  const [confirmLeave, setConfirmLeave] = useState(false)
+
   return (
     <div
       className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -35,6 +40,52 @@ export default function MembersPanel({ members, currentUserId, onRemove, onClose
           <div className="max-h-80 overflow-y-auto">
             <MembersList members={members} currentUserId={currentUserId} onRemove={onRemove} />
           </div>
+          {currentUserId && (onLeave || onLogout) && (
+            <div className="mt-5 pt-4 border-t border-[#333333]">
+              {confirmLeave ? (
+                <div>
+                  <p className="text-sm text-gray-400 mb-3">Are you sure? You'll be removed from this room.</p>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmLeave(false)}
+                      className="flex-1 text-xs font-display uppercase border border-[#555] text-gray-400 hover:text-white hover:border-white px-3 py-2 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onLeave}
+                      className="flex-1 text-xs font-display uppercase bg-red text-white hover:opacity-90 px-3 py-2 transition-colors"
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  {onLeave && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmLeave(true)}
+                      className="flex-1 text-xs font-display uppercase bg-red text-white hover:opacity-90 px-3 py-2 transition-colors"
+                    >
+                      Leave Room
+                    </button>
+                  )}
+                  {onLogout && (
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="flex-1 text-xs font-display uppercase border border-[#555] text-gray-400 hover:text-white hover:border-white px-3 py-2 transition-colors"
+                    >
+                      Log Out
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
