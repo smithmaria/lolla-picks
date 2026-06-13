@@ -2,8 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import lineup from '../data/lineup-2026.json'
 import type { Day, RoomSettings } from '../types'
-
-type VotesByArtist = Record<string, number>
+import {
+  isOverLimit as computeIsOverLimit,
+  votesRemaining as computeVotesRemaining,
+  type LineupEntry,
+  type VotesByArtist,
+} from '../lib/voteMath'
 
 interface UseVotesResult {
   votesByArtist: VotesByArtist
@@ -113,37 +117,16 @@ export function useVotes(
     [roomId, userId],
   )
 
-  const votesUsed = useCallback(
-    (day?: Day): number => {
-      const { vote_scope } = settings
-
-      if (vote_scope === 'overall') {
-        return Object.values(votesByArtist).reduce((sum, n) => sum + n, 0)
-      }
-
-      if (!day) return 0
-
-      const artistIdsForDay = new Set(
-        (lineup as Array<{ id: string; day: string }>)
-          .filter(a => a.day === day)
-          .map(a => a.id),
-      )
-
-      return Object.entries(votesByArtist)
-        .filter(([artistId]) => artistIdsForDay.has(artistId))
-        .reduce((sum, [, count]) => sum + count, 0)
-    },
+  const votesRemaining = useCallback(
+    (day?: Day): number =>
+      computeVotesRemaining(votesByArtist, settings, lineup as LineupEntry[], day),
     [settings, votesByArtist],
   )
 
-  const votesRemaining = useCallback(
-    (day?: Day): number => Math.max(0, settings.votes_per_user - votesUsed(day)),
-    [settings, votesUsed],
-  )
-
   const isOverLimit = useCallback(
-    (day?: Day): boolean => votesUsed(day) > settings.votes_per_user,
-    [settings, votesUsed],
+    (day?: Day): boolean =>
+      computeIsOverLimit(votesByArtist, settings, lineup as LineupEntry[], day),
+    [settings, votesByArtist],
   )
 
   return { votesByArtist, castVote, votesRemaining, isOverLimit, votesError }

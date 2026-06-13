@@ -3,29 +3,21 @@ import './Home.css'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import type { Day, VoteScope } from '../../types'
+import {
+  ALL_DAYS,
+  clampVotes,
+  generateJoinCode,
+  isValidJoinCode,
+  normalizeJoinCode,
+  parseVotesInput,
+  toggleDay as toggleDayValue,
+  validateCreateForm,
+} from './homeValidation'
 
 interface SavedRoom {
   roomId: string
   displayName: string | null
   userName: string
-}
-
-const ALL_DAYS: { value: Day; label: string }[] = [
-  { value: 'thursday', label: 'Thursday' },
-  { value: 'friday', label: 'Friday' },
-  { value: 'saturday', label: 'Saturday' },
-  { value: 'sunday', label: 'Sunday' },
-]
-
-const JOIN_CODE_RE = /^[A-Z0-9]{6}$/
-
-// Unambiguous chars (no 0/O, 1/I/L)
-const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-
-function generateJoinCode(): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(6)))
-    .map(b => CODE_CHARS[b % CODE_CHARS.length])
-    .join('')
 }
 
 export default function Home() {
@@ -84,9 +76,9 @@ export default function Home() {
     e.preventDefault()
     setJoinError(null)
 
-    const trimmed = joinInput.trim().toUpperCase()
+    const trimmed = normalizeJoinCode(joinInput)
 
-    if (!JOIN_CODE_RE.test(trimmed)) {
+    if (!isValidJoinCode(trimmed)) {
       setJoinError('Enter the 6-character room code.')
       return
     }
@@ -104,21 +96,17 @@ export default function Home() {
   }
 
   function toggleDay(day: Day) {
-    const order = ALL_DAYS.map(d => d.value)
-    setSelectedDays(prev => {
-      const next = prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-      return next.sort((a, b) => order.indexOf(a) - order.indexOf(b))
-    })
+    setSelectedDays(prev => toggleDayValue(prev, day))
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    const nextErrors: typeof errors = {}
-    if (!creatorName.trim()) nextErrors.name = 'Your name is required.'
-    if (!creatorPassword) nextErrors.password = 'A password is required.'
-    else if (/\s/.test(creatorPassword)) nextErrors.password = 'Password cannot contain spaces.'
-    if (selectedDays.length === 0) nextErrors.days = 'Select at least one day.'
+    const nextErrors = validateCreateForm({
+      name: creatorName,
+      password: creatorPassword,
+      days: selectedDays,
+    })
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
@@ -373,7 +361,7 @@ export default function Home() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setVotesPerUser(v => Math.max(1, v - 1))}
+                  onClick={() => setVotesPerUser(v => clampVotes(v - 1))}
                   className="w-8 h-8 rounded-lg bg-white border border-[#333333] text-black font-bold hover:bg-gray-100 flex items-center justify-center"
                 >
                   −
@@ -383,12 +371,12 @@ export default function Home() {
                   min={1}
                   max={160}
                   value={votesPerUser}
-                  onChange={e => setVotesPerUser(Math.min(160, Math.max(1, parseInt(e.target.value) || 1)))}
+                  onChange={e => setVotesPerUser(parseVotesInput(e.target.value))}
                   className="w-20 bg-white text-black text-center px-2 py-1.5 text-sm border border-[#000000] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <button
                   type="button"
-                  onClick={() => setVotesPerUser(v => Math.min(160, v + 1))}
+                  onClick={() => setVotesPerUser(v => clampVotes(v + 1))}
                   className="w-8 h-8 rounded-lg bg-white border border-[#333333] text-black font-bold hover:bg-gray-100 flex items-center justify-center"
                 >
                   +
