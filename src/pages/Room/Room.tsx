@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useRoom } from '../../hooks/useRoom'
@@ -26,6 +26,7 @@ export default function Room() {
   const navigate = useNavigate()
   const { room, loading, notFound } = useRoom(roomId)
   const [session, setSession] = useState<LocalSession | null>(null)
+  const sessionRef = useRef(session)
   const [activeDay, setActiveDay] = useState<Day | null>(null)
   const [allUserVotes, setAllUserVotes] = useState<UserVoteMap>({})
   const { members, loaded: membersLoaded, removeMember } = useRoomMembers(roomId)
@@ -122,14 +123,19 @@ export default function Room() {
     return map
   }, [members])
 
+  // Keep ref current so the kick-out effect can read the latest session
+  // without making session a dependency (which would cause a false kick on new-user creation)
+  useEffect(() => { sessionRef.current = session }, [session])
+
   // If the admin removes the current user, drop their session back to name entry
   useEffect(() => {
-    if (!roomId || !session || !membersLoaded) return
-    if (!members.some(m => m.id === session.user_id)) {
+    const s = sessionRef.current
+    if (!roomId || !s || !membersLoaded) return
+    if (!members.some(m => m.id === s.user_id)) {
       localStorage.removeItem(`lolla-user-${roomId}`)
       setSession(null)
     }
-  }, [roomId, session, members, membersLoaded])
+  }, [roomId, members, membersLoaded])
 
   // When a member is removed, clear their votes from local state
   useEffect(() => {
