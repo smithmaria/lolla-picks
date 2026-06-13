@@ -78,7 +78,7 @@ export default function Home() {
   const [voteScope, setVoteScope] = useState<VoteScope>('overall')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [errors, setErrors] = useState<{ name?: string; password?: string; days?: string; server?: string }>({})
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault()
@@ -113,21 +113,19 @@ export default function Home() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
 
-    if (!creatorName.trim()) {
-      setError('Your name is required.')
-      return
-    }
-    if (!creatorPassword.trim()) {
-      setError('Your password is required.')
-      return
-    }
-    if (selectedDays.length === 0) {
-      setError('Select at least one day.')
+    const nextErrors: typeof errors = {}
+    if (!creatorName.trim()) nextErrors.name = 'Your name is required.'
+    if (!creatorPassword) nextErrors.password = 'A password is required.'
+    else if (/\s/.test(creatorPassword)) nextErrors.password = 'Password cannot contain spaces.'
+    if (selectedDays.length === 0) nextErrors.days = 'Select at least one day.'
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors)
       return
     }
 
+    setErrors({})
     setLoading(true)
 
     // 1. Insert the room
@@ -148,7 +146,7 @@ export default function Home() {
 
     if (roomError || !room) {
       setLoading(false)
-      setError(roomError?.message ?? 'Failed to create room.')
+      setErrors({ server: roomError?.message ?? 'Failed to create room.' })
       return
     }
 
@@ -170,7 +168,7 @@ export default function Home() {
     setLoading(false)
 
     if (userError || !roomUser) {
-      setError(userError?.message ?? 'Failed to create your participant entry.')
+      setErrors({ server: userError?.message ?? 'Failed to create your participant entry.' })
       return
     }
 
@@ -261,11 +259,11 @@ export default function Home() {
             <input
               type="text"
               value={creatorName}
-              onChange={e => setCreatorName(e.target.value)}
+              onChange={e => { setCreatorName(e.target.value); setErrors(prev => ({ ...prev, name: undefined })) }}
               placeholder="Name"
-              required
-              className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
+              className={`w-full bg-white text-black px-3 py-2 text-sm border focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark ${errors.name ? 'border-red' : 'border-[#000000]'}`}
             />
+            {errors.name && <p className="text-red text-xs mt-1">{errors.name}</p>}
           </div>
 
           <div>
@@ -274,10 +272,9 @@ export default function Home() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={creatorPassword}
-                onChange={e => setCreatorPassword(e.target.value)}
+                onChange={e => { setCreatorPassword(e.target.value); setErrors(prev => ({ ...prev, password: undefined })) }}
                 placeholder="Password"
-                required
-                className="w-full bg-white text-black px-3 py-2 pr-10 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
+                className={`w-full bg-white text-black px-3 py-2 pr-10 text-sm border focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark ${errors.password ? 'border-red' : 'border-[#000000]'}`}
               />
               <button
                 type="button"
@@ -297,7 +294,10 @@ export default function Home() {
                 )}
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Used to recover your votes if you clear your browser.</p>
+            {errors.password
+              ? <p className="text-red text-xs mt-1">{errors.password}</p>
+              : <p className="text-xs text-gray-500 mt-1">Used to recover your votes if you clear your browser.</p>
+            }
           </div>
 
           <div>
@@ -320,7 +320,7 @@ export default function Home() {
                 <button
                   key={value}
                   type="button"
-                  onClick={() => toggleDay(value)}
+                  onClick={() => { toggleDay(value); setErrors(prev => ({ ...prev, days: undefined })) }}
                   className={`px-3 py-2 text-lg font-display uppercase border transition-colors ${
                     selectedDays.includes(value)
                       ? value === 'thursday'
@@ -337,6 +337,7 @@ export default function Home() {
                 </button>
               ))}
             </div>
+            {errors.days && <p className="text-red text-xs mt-1">{errors.days}</p>}
           </div>
 
           <div>
@@ -407,7 +408,7 @@ export default function Home() {
             </div>
           </div>
 
-          {error && <p className="text-red text-sm">{error}</p>}
+          {errors.server && <p className="text-red text-sm">{errors.server}</p>}
 
           <button
             type="submit"

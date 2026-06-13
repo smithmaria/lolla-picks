@@ -68,6 +68,17 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
     const trimmed = displayName.trim()
 
     if (flow === 'new_user') {
+      if (!password) {
+        setError('A password is required.')
+        setSubmitting(false)
+        return
+      }
+      if (/\s/.test(password)) {
+        setError('Password cannot contain spaces.')
+        setSubmitting(false)
+        return
+      }
+
       const clientToken = crypto.randomUUID()
       const { data, error: insertError } = await supabase
         .from('room_users')
@@ -237,7 +248,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
               <button
                 type="submit"
                 data-testid="password-submit-button"
-                disabled={submitting || !password}
+                disabled={submitting || !password.trim()}
                 className="flex-2 flex-grow bg-yellow hover:opacity-90 disabled:opacity-50 text-black font-display uppercase py-2.5 text-lg transition-colors"
               >
                 {submitting
