@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import lineup from '../data/lineup-2026.json'
 import type { Day, RoomSettings } from '../types'
@@ -7,7 +7,7 @@ type VotesByArtist = Record<string, number>
 
 interface UseVotesResult {
   votesByArtist: VotesByArtist
-  castVote: (artistId: string, delta: 1 | -1) => Promise<void>
+  castVote: (artistId: string, delta: 1 | -1) => void
   votesRemaining: (day?: Day) => number
   votesError: string | null
 }
@@ -20,8 +20,10 @@ export function useVotes(
   const [votesByArtist, setVotesByArtist] = useState<VotesByArtist>({})
   const [votesError, setVotesError] = useState<string | null>(null)
 
+  const intendedVotes = useRef<Record<string, number>>({})
+  const pendingTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+
   useEffect(() => {
-    // Skip malformed/unready arguments
     if (!roomId || !userId) return
 
     const controller = new AbortController()
@@ -49,38 +51,50 @@ export function useVotes(
     }
 
     fetchVotes()
-    return () => controller.abort()
+
+    const channel = supabase
+      .channel(`votes-self:${roomId}:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'votes', filter: `room_id=eq.${roomId}` },
+        payload => {
+          const row = payload.new as { user_id: string; artist_id: string; vote_count: number }
+          if (row.user_id !== userId) return
+          if (pendingTimers.current[row.artist_id] !== undefined) return // local state is ahead
+          setVotesByArtist(prev => ({ ...prev, [row.artist_id]: row.vote_count }))
+        },
+      )
+      .subscribe()
+
+    return () => {
+      controller.abort()
+      supabase.removeChannel(channel)
+      for (const t of Object.values(pendingTimers.current)) clearTimeout(t)
+    }
   }, [roomId, userId])
 
   const castVote = useCallback(
-    async (artistId: string, delta: 1 | -1) => {
-      // Read current from functional updater to avoid stale closure
-      let current = 0
+    (artistId: string, delta: 1 | -1) => {
       setVotesByArtist(prev => {
-        current = prev[artistId] ?? 0
-        const next = Math.max(0, current + delta)
+        const next = Math.max(0, (prev[artistId] ?? 0) + delta)
+        intendedVotes.current[artistId] = next
         return { ...prev, [artistId]: next }
       })
 
-      const next = Math.max(0, current + delta)
-
-      const { error } = await supabase.from('votes').upsert(
-        {
-          room_id: roomId,
-          user_id: userId,
-          artist_id: artistId,
-          vote_count: next,
-        },
-        { onConflict: 'room_id,user_id,artist_id' },
-      )
-
-      if (error) {
-        // Revert optimistic update on failure
-        setVotesByArtist(prev => ({ ...prev, [artistId]: current }))
-        setVotesError('Failed to save vote. Please try again.')
-      } else {
-        setVotesError(null)
-      }
+      clearTimeout(pendingTimers.current[artistId])
+      pendingTimers.current[artistId] = setTimeout(async () => {
+        delete pendingTimers.current[artistId]
+        const voteCount = intendedVotes.current[artistId] ?? 0
+        const { error } = await supabase.from('votes').upsert(
+          { room_id: roomId, user_id: userId, artist_id: artistId, vote_count: voteCount },
+          { onConflict: 'room_id,user_id,artist_id' },
+        )
+        if (error) {
+          setVotesError('Failed to save vote. Please try again.')
+        } else {
+          setVotesError(null)
+        }
+      }, 400)
     },
     [roomId, userId],
   )
@@ -94,7 +108,6 @@ export function useVotes(
         return Math.max(0, votes_per_user - used)
       }
 
-      // per_day: need the day argument to filter artists
       if (!day) return votes_per_user
 
       const artistIdsForDay = new Set(

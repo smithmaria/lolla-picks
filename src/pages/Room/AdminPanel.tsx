@@ -75,11 +75,22 @@ export default function AdminPanel({ room, onClose, onDeleted }: Props) {
         },
       })
       .eq('id', room.id)
-    setSaving(false)
+
     if (err) {
+      setSaving(false)
       setError('Failed to save settings.')
       return
     }
+
+    if ((room.settings.allow_multi_vote ?? true) && !allowMultiVote) {
+      await supabase
+        .from('votes')
+        .update({ vote_count: 1 })
+        .eq('room_id', room.id)
+        .gt('vote_count', 1)
+    }
+
+    setSaving(false)
     onClose()
   }
 
