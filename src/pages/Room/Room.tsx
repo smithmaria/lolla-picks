@@ -36,8 +36,9 @@ export default function Room() {
   const [schedulePicks, setSchedulePicks] = useState<string[]>([])
   const [scheduleAdminOnly, setScheduleAdminOnly] = useState(true)
 
-  function copyLink() {
-    void navigator.clipboard.writeText(window.location.href).then(() => {
+  function copyCode() {
+    if (!room?.join_code) return
+    void navigator.clipboard.writeText(room.join_code).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
@@ -309,13 +310,15 @@ export default function Room() {
               </h1>
               {/* Grouped so the copy link and gear wrap below the title together */}
               <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={copyLink}
-                  className="text-sm font-display uppercase px-4 py-1.5 border border-[#333333] text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
-                >
-                  {copied ? 'Copied!' : 'Copy link'}
-                </button>
+                {room.join_code && (
+                  <button
+                    type="button"
+                    onClick={copyCode}
+                    className="text-sm font-display uppercase px-4 py-1.5 border border-[#333333] text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+                  >
+                    {copied ? 'Copied!' : `Code: ${room.join_code}`}
+                  </button>
+                )}
                 {session?.is_admin && (
                   <button
                     type="button"

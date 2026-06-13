@@ -22,12 +22,12 @@ export default function DayTabs({ days, activeDay, onChange }: Props) {
 
   return (
     <div
-      className="flex gap-2 flex-wrap"
+      className="flex gap-2 overflow-x-auto"
       role="tablist"
       aria-label="Festival days"
     >
       {dayPairs.map(pair => (
-        <div key={pair.join('-')} className="flex gap-2">
+        <div key={pair.join('-')} className="flex gap-2 shrink-0">
           {pair.map(day => (
             <button
               key={day}
