@@ -307,26 +307,29 @@ export default function Room() {
               <h1 className="text-white">
                 {room.display_name ?? 'Lolla Picks'}
               </h1>
-              <button
-                type="button"
-                onClick={copyLink}
-                className="text-sm font-display uppercase px-4 py-1.5 border border-[#333333] text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
-              >
-                {copied ? 'Copied!' : 'Copy link'}
-              </button>
-              {session?.is_admin && (
+              {/* Grouped so the copy link and gear wrap below the title together */}
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setAdminOpen(true)}
-                  aria-label="Open admin panel"
-                  className="text-gray-500 hover:text-yellow transition-colors"
+                  onClick={copyLink}
+                  className="text-sm font-display uppercase px-4 py-1.5 border border-[#333333] text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-                    <circle cx="12" cy="12" r="3" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                  </svg>
+                  {copied ? 'Copied!' : 'Copy link'}
                 </button>
-              )}
+                {session?.is_admin && (
+                  <button
+                    type="button"
+                    onClick={() => setAdminOpen(true)}
+                    aria-label="Open admin panel"
+                    className="text-gray-500 hover:text-yellow transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                      <circle cx="12" cy="12" r="3" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex items-center flex-wrap gap-x-4 gap-y-1">
               <p className="text-gray-400 text-sm">

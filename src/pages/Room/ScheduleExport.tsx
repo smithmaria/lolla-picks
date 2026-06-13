@@ -177,23 +177,40 @@ export default function ScheduleExport({ artists, days, selectedIds, roomName }:
     setExporting(true)
     try {
       await document.fonts.ready
-      // Give the offscreen grids a frame to lay out
       await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
 
       const container = containerRef.current
       if (!container) return
 
+      const dataUrls: { day: Day; dataUrl: string }[] = []
       for (const day of days) {
         const node = container.querySelector<HTMLElement>(`[data-export-day="${day}"]`)
         if (!node) continue
-        const dataUrl = await toPng(node, {
-          pixelRatio: 2,
-          backgroundColor: '#ecade6',
-        })
-        const link = document.createElement('a')
-        link.download = `lolla-schedule-${day}.png`
-        link.href = dataUrl
-        link.click()
+        const dataUrl = await toPng(node, { pixelRatio: 2, backgroundColor: '#ecade6' })
+        dataUrls.push({ day, dataUrl })
+      }
+
+      // On iOS, <a download> goes to Files. Use the Web Share API with image
+      // files instead so the share sheet offers "Save Image" → Photos.
+      const testFile = new File([], 'test.png', { type: 'image/png' })
+      const canShareFiles = !!navigator.canShare?.({ files: [testFile] })
+
+      if (canShareFiles) {
+        const files = await Promise.all(
+          dataUrls.map(async ({ day, dataUrl }) => {
+            const res = await fetch(dataUrl)
+            const blob = await res.blob()
+            return new File([blob], `lolla-schedule-${day}.png`, { type: 'image/png' })
+          })
+        )
+        await navigator.share({ files })
+      } else {
+        for (const { day, dataUrl } of dataUrls) {
+          const link = document.createElement('a')
+          link.download = `lolla-schedule-${day}.png`
+          link.href = dataUrl
+          link.click()
+        }
       }
     } finally {
       setExporting(false)
