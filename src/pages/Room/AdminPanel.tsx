@@ -173,7 +173,7 @@ export default function AdminPanel({ room, onClose, onDeleted }: Props) {
                     type="text"
                     value={displayName}
                     onChange={e => setDisplayName(e.target.value)}
-                    placeholder="e.g. Weekend Crew"
+                    placeholder="e.g. Lolla Trippers"
                     className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
                   />
                 </div>

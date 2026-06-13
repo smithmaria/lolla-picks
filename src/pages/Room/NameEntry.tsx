@@ -210,7 +210,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
                 autoFocus
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Choose a password"
+                placeholder="Password"
                 className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] placeholder-gray-400 focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />
             </div>

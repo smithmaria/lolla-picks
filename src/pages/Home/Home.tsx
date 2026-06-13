@@ -73,7 +73,7 @@ export default function Home() {
   const [creatorPassword, setCreatorPassword] = useState('')
   const [roomDisplayName, setRoomDisplayName] = useState('')
   const [selectedDays, setSelectedDays] = useState<Day[]>(['thursday', 'friday', 'saturday', 'sunday'])
-  const [votesPerUser, setVotesPerUser] = useState(3)
+  const [votesPerUser, setVotesPerUser] = useState(25)
   const [allowMultiVote, setAllowMultiVote] = useState(true)
   const [voteScope, setVoteScope] = useState<VoteScope>('overall')
   const [showPassword, setShowPassword] = useState(false)
@@ -237,7 +237,7 @@ export default function Home() {
                 type="text"
                 value={joinInput}
                 onChange={e => setJoinInput(e.target.value)}
-                placeholder="e.g. PUNK4Z"
+                placeholder="e.g. CAMP4T"
                 className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />
             </div>
@@ -260,7 +260,7 @@ export default function Home() {
               type="text"
               value={creatorName}
               onChange={e => setCreatorName(e.target.value)}
-              placeholder="e.g. Maria"
+              placeholder="Name"
               required
               className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
             />
@@ -273,7 +273,7 @@ export default function Home() {
                 type={showPassword ? 'text' : 'password'}
                 value={creatorPassword}
                 onChange={e => setCreatorPassword(e.target.value)}
-                placeholder="Choose a password"
+                placeholder="Password"
                 required
                 className="w-full bg-white text-black px-3 py-2 pr-10 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />
@@ -306,7 +306,7 @@ export default function Home() {
               type="text"
               value={roomDisplayName}
               onChange={e => setRoomDisplayName(e.target.value)}
-              placeholder="e.g. Weekend Crew"
+              placeholder="e.g. Lolla Trippers"
               className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
             />
           </div>
