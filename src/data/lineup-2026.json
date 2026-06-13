@@ -63,7 +63,7 @@
   { "id": "fri-pe-1", "name": "Bradeazy", "stage": "Perry's", "day": "friday", "start": "12:00", "end": "12:30" },
   { "id": "fri-pe-2", "name": "Avello", "stage": "Perry's", "day": "friday", "start": "12:45", "end": "13:30" },
   { "id": "fri-pe-3", "name": "Lyny", "stage": "Perry's", "day": "friday", "start": "13:45", "end": "14:45" },
-  { "id": "fri-pe-4", "name": "Röz", "stage": "Perry's", "day": "friday", "start": "15:00", "end": "16:00" },
+  { "id": "fri-pe-4", "name": "Røz", "stage": "Perry's", "day": "friday", "start": "15:00", "end": "16:00" },
   { "id": "fri-pe-5", "name": "Notion", "stage": "Perry's", "day": "friday", "start": "16:15", "end": "17:15" },
   { "id": "fri-pe-6", "name": "Sidepiece", "stage": "Perry's", "day": "friday", "start": "17:45", "end": "18:45" },
   { "id": "fri-pe-7", "name": "Mustard", "stage": "Perry's", "day": "friday", "start": "19:00", "end": "20:00" },
