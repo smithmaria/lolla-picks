@@ -165,7 +165,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
             </div>
 
             {error && (
-              <p role="alert" className="text-red-400 text-sm mb-4">
+              <p role="alert" className="text-red text-sm mb-4">
                 {error}
               </p>
             )}
@@ -216,7 +216,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
             </div>
 
             {error && (
-              <p role="alert" className="text-red-400 text-sm mb-4">
+              <p role="alert" className="text-red text-sm mb-4">
                 {error}
               </p>
             )}

@@ -241,7 +241,7 @@ export default function Home() {
                 className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />
             </div>
-            {joinError && <p className="text-red-400 text-sm">{joinError}</p>}
+            {joinError && <p className="text-red text-sm">{joinError}</p>}
             <button
               type="submit"
               className="w-full bg-red hover:bg-red disabled:opacity-50 text-black font-display uppercase px-4 py-2.5 text-lg transition-colors"
@@ -405,7 +405,7 @@ export default function Home() {
             </div>
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-red text-sm">{error}</p>}
 
           <button
             type="submit"
