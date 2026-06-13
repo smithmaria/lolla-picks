@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import lineup from '../../data/lineup-2026.json'
 import type { Day, Room, VoteScope } from '../../types'
 
 interface Props {
@@ -88,6 +89,20 @@ export default function AdminPanel({ room, onClose, onDeleted }: Props) {
         .update({ vote_count: 1 })
         .eq('room_id', room.id)
         .gt('vote_count', 1)
+    }
+
+    const removedDays = room.settings.days.filter(d => !days.includes(d))
+    if (removedDays.length > 0) {
+      const artistIds = (lineup as Array<{ id: string; day: string }>)
+        .filter(a => removedDays.includes(a.day as Day))
+        .map(a => a.id)
+      if (artistIds.length > 0) {
+        await supabase
+          .from('votes')
+          .delete()
+          .eq('room_id', room.id)
+          .in('artist_id', artistIds)
+      }
     }
 
     setSaving(false)

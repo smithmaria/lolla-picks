@@ -65,6 +65,19 @@ export function useVotes(
           setVotesByArtist(prev => ({ ...prev, [row.artist_id]: row.vote_count }))
         },
       )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'votes', filter: `room_id=eq.${roomId}` },
+        payload => {
+          const row = payload.old as { user_id: string; artist_id: string }
+          if (row.user_id !== userId) return
+          setVotesByArtist(prev => {
+            const next = { ...prev }
+            delete next[row.artist_id]
+            return next
+          })
+        },
+      )
       .subscribe()
 
     return () => {
