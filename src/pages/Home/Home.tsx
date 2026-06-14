@@ -6,7 +6,6 @@ import type { Day, VoteScope } from '../../types'
 import {
   ALL_DAYS,
   clampVotes,
-  generateJoinCode,
   isValidJoinCode,
   normalizeJoinCode,
   parseVotesInput,
@@ -116,57 +115,37 @@ export default function Home() {
     setErrors({})
     setLoading(true)
 
-    // 1. Insert the room
-    const { data: room, error: roomError } = await supabase
-      .from('rooms')
-      .insert({
-        display_name: roomDisplayName.trim() || null,
-        join_code: generateJoinCode(),
-        settings: {
+    // Create the room + admin creator in one server-side call. The join code is
+    // generated server-side and the client_token never leaves the database
+    // except as the caller's own returned credential.
+    const { data, error } = await supabase
+      .rpc('create_room', {
+        p_room_display_name: roomDisplayName.trim() || null,
+        p_settings: {
           days: selectedDays,
           votes_per_user: votesPerUser,
           allow_multi_vote: allowMultiVote,
           vote_scope: voteScope,
         },
+        p_creator_name: creatorName.trim(),
+        p_password: creatorPassword,
       })
-      .select('id')
-      .single()
-
-    if (roomError || !room) {
-      setLoading(false)
-      setErrors({ server: roomError?.message ?? 'Failed to create room.' })
-      return
-    }
-
-    // 2. Insert the creator as an admin participant
-    const clientToken = crypto.randomUUID()
-
-    const { data: roomUser, error: userError } = await supabase
-      .from('room_users')
-      .insert({
-        room_id: room.id,
-        display_name: creatorName.trim(),
-        password: creatorPassword,
-        client_token: clientToken,
-        is_admin: true,
-      })
-      .select('id')
-      .single()
+      .single<{ room_id: string; join_code: string; user_id: string; client_token: string }>()
 
     setLoading(false)
 
-    if (userError || !roomUser) {
-      setErrors({ server: userError?.message ?? 'Failed to create your participant entry.' })
+    if (error || !data) {
+      setErrors({ server: error?.message ?? 'Failed to create room.' })
       return
     }
 
-    // 3. Store session in localStorage
+    // Store session in localStorage
     localStorage.setItem(
-      `lolla-user-${room.id}`,
-      JSON.stringify({ user_id: roomUser.id, client_token: clientToken, is_admin: true, display_name: creatorName.trim() })
+      `lolla-user-${data.room_id}`,
+      JSON.stringify({ user_id: data.user_id, client_token: data.client_token, is_admin: true, display_name: creatorName.trim() })
     )
 
-    navigate(`/room/${room.id}`)
+    navigate(`/room/${data.room_id}`)
   }
 
   return (

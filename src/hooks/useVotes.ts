@@ -20,6 +20,7 @@ interface UseVotesResult {
 export function useVotes(
   roomId: string,
   userId: string,
+  clientToken: string,
   settings: RoomSettings,
 ): UseVotesResult {
   const [votesByArtist, setVotesByArtist] = useState<VotesByArtist>({})
@@ -103,10 +104,13 @@ export function useVotes(
       pendingTimers.current[artistId] = setTimeout(async () => {
         delete pendingTimers.current[artistId]
         const voteCount = intendedVotes.current[artistId] ?? 0
-        const { error } = await supabase.from('votes').upsert(
-          { room_id: roomId, user_id: userId, artist_id: artistId, vote_count: voteCount },
-          { onConflict: 'room_id,user_id,artist_id' },
-        )
+        const { error } = await supabase.rpc('cast_vote', {
+          p_room_id: roomId,
+          p_user_id: userId,
+          p_client_token: clientToken,
+          p_artist_id: artistId,
+          p_vote_count: voteCount,
+        })
         if (error) {
           setVotesError('Failed to save vote. Please try again.')
         } else {
@@ -114,7 +118,7 @@ export function useVotes(
         }
       }, 400)
     },
-    [roomId, userId],
+    [roomId, userId, clientToken],
   )
 
   const votesRemaining = useCallback(

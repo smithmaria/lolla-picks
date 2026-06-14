@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import type { LocalSession } from '../types'
 
 export interface RoomMember {
   id: string
@@ -14,7 +15,10 @@ interface UseRoomMembersResult {
   removeMember: (userId: string) => Promise<boolean>
 }
 
-export function useRoomMembers(roomId: string | undefined): UseRoomMembersResult {
+export function useRoomMembers(
+  roomId: string | undefined,
+  session: LocalSession | null,
+): UseRoomMembersResult {
   const [members, setMembers] = useState<RoomMember[]>([])
   const [loaded, setLoaded] = useState(false)
 
@@ -65,16 +69,19 @@ export function useRoomMembers(roomId: string | undefined): UseRoomMembersResult
   }, [roomId])
 
   const removeMember = useCallback(async (userId: string) => {
-    // select() back the deleted row so an RLS no-op surfaces as a failure
-    const { data, error } = await supabase
-      .from('room_users')
-      .delete()
-      .eq('id', userId)
-      .select('id')
-    if (error || !data || data.length === 0) return false
+    if (!roomId || !session) return false
+    // The server verifies the caller is an admin (removing anyone) or is
+    // removing themselves, and returns false if nothing was deleted.
+    const { data, error } = await supabase.rpc('remove_member', {
+      p_room_id: roomId,
+      p_actor_user_id: session.user_id,
+      p_client_token: session.client_token,
+      p_target_user_id: userId,
+    })
+    if (error || data !== true) return false
     setMembers(prev => prev.filter(m => m.id !== userId))
     return true
-  }, [])
+  }, [roomId, session])
 
   return { members, loaded, removeMember }
 }

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import lineup from '../../data/lineup-2026.json'
-import type { Day, Room, VoteScope } from '../../types'
+import type { Day, LocalSession, Room, VoteScope } from '../../types'
 
 interface Props {
   room: Room
+  session: LocalSession
   onClose: () => void
   onDeleted: () => void
 }
@@ -23,7 +24,7 @@ const DAY_ACTIVE: Record<Day, string> = {
   sunday: 'bg-tealgreen border-tealgreen text-black',
 }
 
-export default function AdminPanel({ room, onClose, onDeleted }: Props) {
+export default function AdminPanel({ room, session, onClose, onDeleted }: Props) {
   const [displayName, setDisplayName] = useState(room.display_name ?? '')
   const [days, setDays] = useState<Day[]>(room.settings.days)
   const [votesPerUser, setVotesPerUser] = useState(room.settings.votes_per_user)
@@ -63,57 +64,55 @@ export default function AdminPanel({ room, onClose, onDeleted }: Props) {
     }
     setSaving(true)
     setError(null)
-    const { error: err } = await supabase
-      .from('rooms')
-      .update({
-        display_name: displayName.trim() || null,
-        settings: {
-          ...room.settings,
-          days,
-          votes_per_user: votesPerUser,
-          vote_scope: voteScope,
-          allow_multi_vote: allowMultiVote,
-        },
-      })
-      .eq('id', room.id)
+
+    // When multi-vote is turned off, existing stacked votes must collapse to 1.
+    const clampVotes = (room.settings.allow_multi_vote ?? true) && !allowMultiVote
+
+    // Votes for artists on removed days are no longer valid and must be deleted.
+    const removedDays = room.settings.days.filter(d => !days.includes(d))
+    const deleteArtistIds = removedDays.length > 0
+      ? (lineup as Array<{ id: string; day: string }>)
+          .filter(a => removedDays.includes(a.day as Day))
+          .map(a => a.id)
+      : []
+
+    // One server-side call applies the settings + both vote cleanups atomically,
+    // after verifying the caller is an admin.
+    const { error: err } = await supabase.rpc('update_room_settings', {
+      p_room_id: room.id,
+      p_actor_user_id: session.user_id,
+      p_client_token: session.client_token,
+      p_display_name: displayName.trim() || null,
+      p_settings: {
+        ...room.settings,
+        days,
+        votes_per_user: votesPerUser,
+        vote_scope: voteScope,
+        allow_multi_vote: allowMultiVote,
+      },
+      p_clamp_votes: clampVotes,
+      p_delete_artist_ids: deleteArtistIds.length > 0 ? deleteArtistIds : null,
+    })
+
+    setSaving(false)
 
     if (err) {
-      setSaving(false)
       setError('Failed to save settings.')
       return
     }
 
-    if ((room.settings.allow_multi_vote ?? true) && !allowMultiVote) {
-      await supabase
-        .from('votes')
-        .update({ vote_count: 1 })
-        .eq('room_id', room.id)
-        .gt('vote_count', 1)
-    }
-
-    const removedDays = room.settings.days.filter(d => !days.includes(d))
-    if (removedDays.length > 0) {
-      const artistIds = (lineup as Array<{ id: string; day: string }>)
-        .filter(a => removedDays.includes(a.day as Day))
-        .map(a => a.id)
-      if (artistIds.length > 0) {
-        await supabase
-          .from('votes')
-          .delete()
-          .eq('room_id', room.id)
-          .in('artist_id', artistIds)
-      }
-    }
-
-    setSaving(false)
     onClose()
   }
 
   async function handleDelete() {
     setDeleting(true)
     setError(null)
-    await supabase.from('votes').delete().eq('room_id', room.id)
-    const { error: err } = await supabase.from('rooms').delete().eq('id', room.id)
+    // Votes + members cascade-delete with the room; the server verifies admin.
+    const { error: err } = await supabase.rpc('delete_room', {
+      p_room_id: room.id,
+      p_actor_user_id: session.user_id,
+      p_client_token: session.client_token,
+    })
     setDeleting(false)
     if (err) {
       setError('Failed to delete room.')

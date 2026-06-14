@@ -22,12 +22,12 @@ export interface Room {
   created_at: string
 }
 
+// Secrets (password hash, client_token) live in the separate room_user_secrets
+// table and are never exposed to the client. See migration 005.
 export interface RoomUser {
   id: string
   room_id: string
   display_name: string
-  password: string
-  client_token: string
   is_admin: boolean
   created_at: string
 }

@@ -29,7 +29,7 @@ export default function Room() {
   const sessionRef = useRef(session)
   const [activeDay, setActiveDay] = useState<Day | null>(null)
   const [allUserVotes, setAllUserVotes] = useState<UserVoteMap>({})
-  const { members, loaded: membersLoaded, removeMember } = useRoomMembers(roomId)
+  const { members, loaded: membersLoaded, removeMember } = useRoomMembers(roomId, session)
   const [adminOpen, setAdminOpen] = useState(false)
   const [membersOpen, setMembersOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -87,33 +87,39 @@ export default function Room() {
   }, [room?.settings.schedule_admin_only])
 
   const toggleScheduleAdminOnly = useCallback(async () => {
-    if (!room) return
+    if (!room || !session) return
     const prev = scheduleAdminOnly
     const next = !prev
     setScheduleAdminOnly(next)
-    const { error } = await supabase
-      .from('rooms')
-      .update({ settings: { ...room.settings, schedule_admin_only: next } })
-      .eq('id', room.id)
+    const { error } = await supabase.rpc('update_room_schedule', {
+      p_room_id: room.id,
+      p_actor_user_id: session.user_id,
+      p_client_token: session.client_token,
+      p_key: 'schedule_admin_only',
+      p_value: next,
+    })
     if (error) setScheduleAdminOnly(prev)
-  }, [room, scheduleAdminOnly])
+  }, [room, session, scheduleAdminOnly])
 
   // Toggle an artist on/off the shared schedule, persisted in room settings
   const toggleSchedulePick = useCallback(
     async (artistId: string) => {
-      if (!room) return
+      if (!room || !session) return
       const prev = schedulePicks
       const next = prev.includes(artistId)
         ? prev.filter(id => id !== artistId)
         : [...prev, artistId]
       setSchedulePicks(next)
-      const { error } = await supabase
-        .from('rooms')
-        .update({ settings: { ...room.settings, schedule_picks: next } })
-        .eq('id', room.id)
+      const { error } = await supabase.rpc('update_room_schedule', {
+        p_room_id: room.id,
+        p_actor_user_id: session.user_id,
+        p_client_token: session.client_token,
+        p_key: 'schedule_picks',
+        p_value: next,
+      })
       if (error) setSchedulePicks(prev)
     },
-    [room, schedulePicks],
+    [room, session, schedulePicks],
   )
 
   // Display names for all room users, kept live by the members subscription
@@ -210,6 +216,7 @@ export default function Room() {
   const { votesByArtist, castVote, votesRemaining, isOverLimit, votesError } = useVotes(
     roomId ?? '',
     session?.user_id ?? '',
+    session?.client_token ?? '',
     room?.settings ?? fallbackSettings,
   )
 
@@ -421,6 +428,7 @@ export default function Room() {
         {session?.is_admin && adminOpen && (
           <AdminPanel
             room={room}
+            session={session}
             onClose={() => setAdminOpen(false)}
             onDeleted={() => navigate('/')}
           />

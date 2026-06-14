@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { LocalSession } from '../../types'
 
@@ -9,9 +9,8 @@ interface Props {
 
 type Flow = 'idle' | 'new_user' | 'returning_user'
 
-interface ExistingUserRow {
-  id: string
-  password: string
+interface AuthResult {
+  user_id: string
   client_token: string
   is_admin: boolean
 }
@@ -22,8 +21,6 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
   const [flow, setFlow] = useState<Flow>('idle')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  // Cache the fetched row so the returning-user path does not re-fetch (avoids TOCTOU)
-  const existingUserRef = useRef<ExistingUserRow | null>(null)
 
   async function handleNameContinue(e: React.FormEvent) {
     e.preventDefault()
@@ -37,9 +34,11 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
       return
     }
 
+    // Only check whether the name is taken — no secrets are read. The actual
+    // password verification happens server-side in handlePasswordSubmit.
     const { data, error: fetchError } = await supabase
       .from('room_users')
-      .select('id, password, client_token, is_admin')
+      .select('id')
       .eq('room_id', roomId)
       .eq('display_name', trimmed)
       .maybeSingle()
@@ -51,13 +50,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
       return
     }
 
-    if (data) {
-      existingUserRef.current = data as ExistingUserRow
-      setFlow('returning_user')
-    } else {
-      existingUserRef.current = null
-      setFlow('new_user')
-    }
+    setFlow(data ? 'returning_user' : 'new_user')
   }
 
   async function handlePasswordSubmit(e: React.FormEvent) {
@@ -79,18 +72,13 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
         return
       }
 
-      const clientToken = crypto.randomUUID()
       const { data, error: insertError } = await supabase
-        .from('room_users')
-        .insert({
-          room_id: roomId,
-          display_name: trimmed,
-          password,
-          client_token: clientToken,
-          is_admin: false,
+        .rpc('register_user', {
+          p_room_id: roomId,
+          p_display_name: trimmed,
+          p_password: password,
         })
-        .select('id, is_admin')
-        .single()
+        .single<AuthResult>()
 
       setSubmitting(false)
 
@@ -100,32 +88,38 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
       }
 
       const session: LocalSession = {
-        user_id: data.id as string,
-        client_token: clientToken,
-        is_admin: data.is_admin as boolean,
+        user_id: data.user_id,
+        client_token: data.client_token,
+        is_admin: data.is_admin,
         display_name: trimmed,
       }
       localStorage.setItem(`lolla-user-${roomId}`, JSON.stringify(session))
       onSuccess(session)
     } else {
-      // Use the cached row from the name-check step — no second fetch needed
-      const existing = existingUserRef.current
+      // Verify the password server-side. A wrong password returns no row.
+      const { data, error: authError } = await supabase
+        .rpc('authenticate_user', {
+          p_room_id: roomId,
+          p_display_name: trimmed,
+          p_password: password,
+        })
+        .maybeSingle<AuthResult>()
+
       setSubmitting(false)
 
-      if (!existing) {
-        setError('Something went wrong. Please go back and try again.')
+      if (authError) {
+        setError('Something went wrong. Please try again.')
         return
       }
-
-      if (existing.password !== password) {
+      if (!data) {
         setError('Incorrect password.')
         return
       }
 
       const session: LocalSession = {
-        user_id: existing.id,
-        client_token: existing.client_token,
-        is_admin: existing.is_admin,
+        user_id: data.user_id,
+        client_token: data.client_token,
+        is_admin: data.is_admin,
         display_name: trimmed,
       }
       localStorage.setItem(`lolla-user-${roomId}`, JSON.stringify(session))
