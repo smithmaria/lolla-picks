@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import type { LocalSession } from '../../types'
 
@@ -176,14 +177,23 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
               </p>
             )}
 
-            <button
-              type="submit"
-              data-testid="name-continue-button"
-              disabled={submitting}
-              className="w-full bg-yellow hover:opacity-90 disabled:opacity-50 text-black font-display uppercase py-2.5 text-lg transition-colors"
-            >
-              {submitting ? 'Checking…' : 'Continue'}
-            </button>
+            <div className="flex gap-3">
+              <Link
+                to="/"
+                data-testid="back-home-link"
+                className="flex-1 flex items-center justify-center bg-grayDark hover:bg-[#2a2a2a] text-white font-display uppercase py-2.5 text-lg transition-colors"
+              >
+                Back
+              </Link>
+              <button
+                type="submit"
+                data-testid="name-continue-button"
+                disabled={submitting}
+                className="flex-2 flex-grow bg-yellow hover:opacity-90 disabled:opacity-50 text-black font-display uppercase py-2.5 text-lg transition-colors"
+              >
+                {submitting ? 'Checking…' : 'Continue'}
+              </button>
+            </div>
           </form>
         )}
 
