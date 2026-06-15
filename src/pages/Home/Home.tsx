@@ -204,6 +204,7 @@ export default function Home() {
                 type="text"
                 value={joinInput}
                 onChange={e => setJoinInput(e.target.value)}
+                maxLength={6}
                 placeholder="e.g. CAMP4T"
                 className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />
@@ -227,6 +228,7 @@ export default function Home() {
               type="text"
               value={creatorName}
               onChange={e => { setCreatorName(e.target.value); setErrors(prev => ({ ...prev, name: undefined })) }}
+              maxLength={40}
               placeholder="Name"
               className={`w-full bg-white text-black px-3 py-2 text-sm border focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark ${errors.name ? 'border-red' : 'border-[#000000]'}`}
             />
@@ -240,6 +242,7 @@ export default function Home() {
                 type={showPassword ? 'text' : 'password'}
                 value={creatorPassword}
                 onChange={e => { setCreatorPassword(e.target.value); setErrors(prev => ({ ...prev, password: undefined })) }}
+                maxLength={72}
                 placeholder="Password"
                 className={`w-full bg-white text-black px-3 py-2 pr-10 text-sm border focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark ${errors.password ? 'border-red' : 'border-[#000000]'}`}
               />
@@ -275,6 +278,7 @@ export default function Home() {
               type="text"
               value={roomDisplayName}
               onChange={e => setRoomDisplayName(e.target.value)}
+              maxLength={50}
               placeholder="e.g. Lolla Trippers"
               className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
             />

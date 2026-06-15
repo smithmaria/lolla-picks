@@ -164,6 +164,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
                 autoFocus
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
+                maxLength={40}
                 placeholder="e.g. Jess"
                 className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] placeholder-gray-400 focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />
@@ -215,6 +216,7 @@ export default function NameEntry({ roomId, onSuccess }: Props) {
                 autoFocus
                 value={password}
                 onChange={e => setPassword(e.target.value)}
+                maxLength={72}
                 placeholder="Password"
                 className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] placeholder-gray-400 focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
               />

@@ -58,6 +58,7 @@ export default function AdminPanel({ room, session, onClose, onDeleted }: Props)
   }
 
   async function handleSave() {
+    if (saving) return
     if (days.length === 0) {
       setError('Select at least one day.')
       return
@@ -138,7 +139,7 @@ export default function AdminPanel({ room, session, onClose, onDeleted }: Props)
               <p className="text-gray-400 text-sm">
                 This will permanently delete the room and all votes. This cannot be undone.
               </p>
-              {error && <p className="text-red-400 text-sm mt-3">{error}</p>}
+              {error && <p className="text-red text-sm mt-3">{error}</p>}
             </div>
             <div className="bg-black px-6 py-4 flex items-center justify-between gap-3">
               <button
@@ -160,7 +161,7 @@ export default function AdminPanel({ room, session, onClose, onDeleted }: Props)
             </div>
           </>
         ) : (
-          <>
+          <form onSubmit={e => { e.preventDefault(); void handleSave() }}>
             <div className="p-6 pb-5">
               <div className="flex items-start justify-between mb-5">
                 <h2 id="admin-panel-title" className="text-2xl font-bold text-white">
@@ -200,6 +201,7 @@ export default function AdminPanel({ room, session, onClose, onDeleted }: Props)
                     type="text"
                     value={displayName}
                     onChange={e => setDisplayName(e.target.value)}
+                    maxLength={50}
                     placeholder="e.g. Lolla Trippers"
                     className="w-full bg-white text-black px-3 py-2 text-sm border border-[#000000] focus:outline-none focus:border-tealDark focus:ring-1 focus:ring-tealDark"
                   />
@@ -291,7 +293,7 @@ export default function AdminPanel({ room, session, onClose, onDeleted }: Props)
                   </div>
                 </div>
 
-                {error && <p className="text-red-400 text-sm">{error}</p>}
+                {error && <p className="text-red text-sm">{error}</p>}
               </div>
             </div>
 
@@ -304,15 +306,14 @@ export default function AdminPanel({ room, session, onClose, onDeleted }: Props)
                 Delete room
               </button>
               <button
-                type="button"
-                onClick={() => void handleSave()}
+                type="submit"
                 disabled={saving}
                 className="bg-yellow hover:opacity-90 disabled:opacity-50 text-black text-base font-display uppercase px-5 py-2.5 transition-colors"
               >
                 {saving ? 'Saving…' : 'Save settings'}
               </button>
             </div>
-          </>
+          </form>
         )}
       </div>
     </div>
